@@ -1,0 +1,17 @@
+# Day 1: data + EDA
+pandas>=2.2
+pyarrow>=15
+numpy>=1.26
+matplotlib>=3.8
+kaggle>=1.6
+pytest>=8
+
+# Later days (install now so the environment is set up once)
+scikit-learn>=1.4          # Day 3 TF-IDF baseline
+sentence-transformers>=3.0 # Day 4 embeddings
+faiss-cpu>=1.8             # Day 4-5 retrieval
+lightgbm>=4.3              # Day 9 ranker
+shap>=0.45                 # Day 10 explainability
+fastapi>=0.110             # Day 12 API
+uvicorn>=0.29
+streamlit>=1.35            # Day 13 UI
