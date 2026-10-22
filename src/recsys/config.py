@@ -14,5 +14,5 @@ MIN_ITEM_RATINGS = 20
 SEED = 42
 
 ML_URL = "https://files.grouplens.org/datasets/movielens/ml-32m.zip"
-TMDB_KAGGLE_SLUG = "asaniczka/tmdb-movies-dataset-2023-930k-movies"
+TMDB_KAGGLE_SLUG = "alanvourch/tmdb-movies-daily-updates"
 TMDB_POSTER_BASE = "https://image.tmdb.org/t/p/w342"

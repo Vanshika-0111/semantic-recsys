@@ -14,6 +14,12 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+try:  # use the OS certificate store (fixes SSL errors on Windows/Anaconda/antivirus)
+    import truststore
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from recsys.config import ML_DIR, ML_URL, RAW_DIR, TMDB_DIR, TMDB_KAGGLE_SLUG  # noqa: E402
 
