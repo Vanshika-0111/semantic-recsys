@@ -26,3 +26,16 @@ N_COLD_USERS = 5000         # users held out ENTIRELY from training (cold-start 
 N_COLD_SEEDS = 5            # first 5 liked movies = onboarding seeds (eval at 0/1/3/5)
 RELEVANCE_THRESHOLD = 4.0   # rating >= 4 counts as relevant
 EVAL_KS = (5, 10, 20)
+
+# --- Day 3: baselines ---
+RESULTS_DIR = REPORTS_DIR / "results"          # small JSON/markdown results (committed)
+RUNS_DIR = DATA_DIR / "runs"                    # per-user metrics, cached matrices (git-ignored)
+HEAD_SHARE = 0.10           # "head" = top 10% most-rated movies in training (EDA: ~79% of ratings)
+COLD_SEED_COUNTS = (0, 1, 3, 5)
+TUNE_USERS = 30000          # val users sampled for tuning (seeded); final test uses ALL users
+KNN_NEIGHBORS = 200         # TF-IDF item-kNN: neighbours kept per movie
+# Grid tuned on validation. Defaults below are used if you skip the tuning stage.
+POP_MODES = ("count", "liked")
+TFIDF_GRID = [{"weighting": w, "max_history": h}
+              for w in ("liked", "centered") for h in (None, 50)]
+TFIDF_DEFAULT = {"weighting": "liked", "max_history": None}

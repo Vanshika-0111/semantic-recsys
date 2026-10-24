@@ -15,16 +15,17 @@ python scripts/download_data.py    # MovieLens 32M + Kaggle TMDB (needs Kaggle A
 python scripts/prepare_data.py     # join + k-core filter -> data/processed/
 python scripts/eda.py              # figures + reports/eda_summary.md
 python scripts/make_split.py       # Day 2: create + freeze the evaluation split
+python scripts/run_baselines.py    # Day 3: popularity + TF-IDF baselines -> reports/results/
 pytest -q
 ```
 
 ## Repo layout
 
 ```
-src/recsys/      library code (config, data loading, later: metrics, models)
+src/recsys/      library code (config, data, split, metrics, text, baselines)
 scripts/         runnable pipeline steps
 tests/           unit tests
-reports/         EDA summary and figures
+reports/         EDA summary, figures, results/ (metric tables per day)
 data/            raw + processed data (git-ignored)
 ```
 
@@ -53,6 +54,28 @@ data/            raw + processed data (git-ignored)
   every model used the same split.
 - Known limitation: a per-user time split is not a global time split, so some training
   ratings of other users are later than a user's test ratings (standard for MovieLens; noted).
+
+## Baselines (Day 3)
+
+Both baselines share one scoring path (dense batch scores → remove already-rated movies →
+top-K), so every later model is compared under identical rules.
+
+- **Popularity** — rank movies by number of training ratings (`count`) or by number of
+  ratings ≥ 4 (`liked`); the variant is picked on validation.
+- **TF-IDF content-based (item-kNN)** — TF-IDF (1–2-grams) over the *same* item document the
+  embedding model uses on Day 4 (title, year, genres, keywords, tagline, overview). Each movie
+  keeps its 200 most cosine-similar movies; a user's score for movie *j* is
+  Σᵢ w(u,i)·sim(i,j) over their history. With all neighbours kept this ranks exactly like
+  cosine(user TF-IDF centroid, movie) (unit-tested); keeping 200 makes it fast and gives
+  "because you liked X" explanations for free. Weights: `liked` (1 for rating ≥ 4) or
+  `centered` (rating − user mean, so dislikes push similar movies down), optionally only the
+  last 50 items; chosen on validation.
+- Cold start: profiles come from the 1 / 3 / 5 onboarding seeds; with 0 seeds the content
+  model has nothing to go on and falls back to popularity.
+- Beyond accuracy: catalog coverage, long-tail share (outside the top 10% most-rated movies)
+  and genre intra-list diversity @10.
+
+Results: `reports/results/day03_baselines.md`.
 
 ## Data attribution
 

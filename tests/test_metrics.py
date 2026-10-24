@@ -13,8 +13,8 @@ import pandas as pd
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from recsys.metrics import (PAD, catalog_coverage, evaluate, intra_list_diversity,  # noqa: E402
-                            long_tail_share, mrr_at_k, ndcg_at_k, precision_at_k,
+from recsys.metrics import (PAD, beyond_accuracy, catalog_coverage, evaluate,  # noqa: E402
+                            intra_list_diversity, long_tail_share, mean_intra_list_diversity, mrr_at_k, ndcg_at_k, precision_at_k,
                             recall_at_k, recs_to_matrix)
 
 RECS = [10, 20, 30, 40, 50]
@@ -140,3 +140,18 @@ def test_evaluate_matches_reference_on_random_data():
 def test_evaluate_rejects_duplicates():
     with pytest.raises(ValueError):
         evaluate(np.array([1]), np.array([[20, 20, 30]]), _truth([(1, 20, 5)]), ks=(3,))
+
+
+def test_beyond_accuracy_matches_reference():
+    rng = np.random.default_rng(1)
+    item_ids = np.arange(100, 150)
+    vecs = (rng.random((50, 6)) < 0.4).astype(float)          # genre-like multi-hot (some all-zero)
+    index = {int(i): j for j, i in enumerate(item_ids)}
+    lists = [list(rng.choice(item_ids, size=int(rng.integers(0, 11)), replace=False))
+             for _ in range(200)]
+    _, mat = recs_to_matrix(dict(enumerate(lists)), k=10)
+    head = item_ids[:5]
+    out = beyond_accuracy(mat, item_ids, head, vecs, k=10, chunk=37)   # odd chunk on purpose
+    assert out["coverage@10"] == pytest.approx(catalog_coverage(lists, 50, 10))
+    assert out["long_tail@10"] == pytest.approx(long_tail_share(lists, set(head.tolist()), 10))
+    assert out["diversity@10"] == pytest.approx(mean_intra_list_diversity(lists, vecs, index, 10))

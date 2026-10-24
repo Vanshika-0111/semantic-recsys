@@ -123,6 +123,42 @@ def mean_intra_list_diversity(rec_lists: Iterable[Sequence[int]], item_vectors: 
     return float(np.mean(vals)) if vals else float("nan")
 
 
+def beyond_accuracy(recs: np.ndarray, item_ids: np.ndarray, head_items: np.ndarray,
+                    item_vectors: np.ndarray, k: int = 10, chunk: int = 20000) -> dict:
+    """Vectorized catalog coverage, long-tail share and mean intra-list diversity @k
+    for a (U, Kmax) recommendation matrix padded with PAD. Same definitions as the
+    reference functions above (a test checks they agree).
+
+    item_ids     : sorted catalog movieIds; item_vectors rows follow item_ids
+    head_items   : movieIds of the popular head (e.g. top 10% by training ratings)
+    """
+    r = np.asarray(recs, dtype=np.int64)[:, :k]
+    valid = r != PAD
+    item_ids = np.asarray(item_ids, dtype=np.int64)
+    rec_items = np.unique(r[valid])
+    out = {f"coverage@{k}": float(rec_items.size / item_ids.size)}
+    n_slots = int(valid.sum())
+    tail = valid & ~np.isin(r, np.asarray(head_items, dtype=np.int64))
+    out[f"long_tail@{k}"] = float(tail.sum() / n_slots) if n_slots else float("nan")
+
+    v = np.asarray(item_vectors, dtype=np.float64)
+    v = v / np.clip(np.linalg.norm(v, axis=1, keepdims=True), 1e-12, None)
+    total, count = 0.0, 0
+    for s in range(0, r.shape[0], chunk):
+        rr, vv = r[s:s + chunk], valid[s:s + chunk]
+        pos = np.searchsorted(item_ids, np.where(vv, rr, item_ids[0]))
+        vv = vv & (item_ids[np.minimum(pos, item_ids.size - 1)] == rr)
+        L = v[pos] * vv[..., None]                          # (u, k, d), padded rows = 0
+        sim = np.einsum("ukd,ujd->ukj", L, L)
+        n = vv.sum(axis=1)
+        pair_sum = sim.sum(axis=(1, 2)) - np.einsum("ukk->u", sim)
+        ok = n >= 2
+        total += float(np.sum(1.0 - pair_sum[ok] / (n[ok] * (n[ok] - 1))))
+        count += int(ok.sum())
+    out[f"diversity@{k}"] = total / count if count else float("nan")
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # 2) Vectorized evaluation for many users
 # --------------------------------------------------------------------------- #
