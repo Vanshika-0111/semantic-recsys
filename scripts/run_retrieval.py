@@ -385,7 +385,9 @@ def plot_ann(ann: dict, model_key: str, path: Path) -> None:
             if M == label_M:                                 # skip labels that would collide
                 last_x = None
                 for r in pts:
-                    if last_x is None or r["p95_ms"] / last_x > 1.3:
+                    near_flat = r["p95_ms"] > 0.6 * next(
+                        x["p95_ms"] for x in rows if x["index"] == "Flat" and x["k"] == k)
+                    if (last_x is None or r["p95_ms"] / last_x > 1.3) and not near_flat:
                         ax.annotate(f"ef={r['ef_search']}", (r["p95_ms"], r["recall"]),
                                     textcoords="offset points", xytext=(5, -13), fontsize=8,
                                     color=ink2)
@@ -393,11 +395,11 @@ def plot_ann(ann: dict, model_key: str, path: Path) -> None:
         f = next(r for r in rows if r["index"] == "Flat" and r["k"] == k)
         ax.scatter([f["p95_ms"]], [1.0], marker="*", s=220, color=ink, zorder=4,
                    label="Flat (exact)", edgecolors=surface, linewidths=1.5)
-        ax.annotate(f"Flat (exact)\n{f['p95_ms']:.2f} ms", (f["p95_ms"], 1.0),
-                    textcoords="offset points", xytext=(8, -26), ha="left", fontsize=9, color=ink)
+        ax.annotate(f"Flat (exact): {f['p95_ms']:.2f} ms", (f["p95_ms"], 1.0),
+                    textcoords="offset points", xytext=(0, 9), ha="center", fontsize=9, color=ink)
         ax.axhline(ann["target_recall"], color=ink2, lw=1, ls=(0, (4, 3)), zorder=1)
-        ax.text(0.99, ann["target_recall"], f"target {ann['target_recall']:.2f} ",
-                transform=ax.get_yaxis_transform(), ha="right", va="bottom", fontsize=8, color=ink2)
+        ax.text(0.01, ann["target_recall"], f" target recall {ann['target_recall']:.2f}",
+                transform=ax.get_yaxis_transform(), ha="left", va="bottom", fontsize=8, color=ink2)
         ax.set_xscale("log")
         ax.xaxis.set_major_locator(matplotlib.ticker.LogLocator(base=10, subs=(1.0, 2.0, 5.0)))
         ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda x, _: f"{x:g}"))
@@ -416,7 +418,7 @@ def plot_ann(ann: dict, model_key: str, path: Path) -> None:
             ax.spines[s].set_color(grid)
         ax.tick_params(colors=ink2)
         lo = min([r["recall"] for r in rows if r["k"] == k] + [ann["target_recall"]])
-        ax.set_ylim(max(0.0, lo - 0.03), 1.015)
+        ax.set_ylim(max(0.0, lo - 0.03), 1.0 + 0.09 * (1.0 - max(0.0, lo - 0.03)))   # room for the Flat label
     axes[0].legend(frameon=False, fontsize=9, loc="lower right", labelcolor=ink)
     fig.suptitle(f"FAISS Flat vs HNSW — {ann['n_items']:,} movies, {model_key} {ann['dim']}-d, "
                  f"{ann['n_queries']:,} user-profile queries", color=ink, x=0.01, ha="left", fontsize=12)
@@ -483,6 +485,8 @@ def main() -> None:
     p.add_argument("--latency-queries", type=int, default=1000)
     p.add_argument("--hnsw-m", type=int, nargs="+", default=list(config.HNSW_M))
     p.add_argument("--smoke", action="store_true", help="small run to check everything works")
+    p.add_argument("--plot-only", action="store_true",
+                   help="redraw the Flat vs HNSW chart from the saved json (no data loading)")
     args = p.parse_args()
     if args.smoke:
         args.tune_users, args.test_users = 3000, 5000
@@ -491,9 +495,16 @@ def main() -> None:
     config.RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     out_json = config.RESULTS_DIR / f"{tag}.json"
     results = json.loads(out_json.read_text()) if out_json.exists() else {}
+    t0 = time.time()
+    if args.plot_only:
+        if "ann" not in results:
+            raise SystemExit(f"no 'ann' results in {out_json.name}; run --stages ann first")
+        key = results.get("selected", {}).get("model", "bge-small")
+        plot_ann(results["ann"], key, config.FIG_DIR / f"{tag}_flat_vs_hnsw.png")
+        log(f"redrew reports/figures/{tag}_flat_vs_hnsw.png", t0)
+        return
     results["split_fingerprint"] = json.loads(
         (config.SPLIT_DIR / S.MANIFEST_FILE).read_text())["fingerprint"]
-    t0 = time.time()
     ctx = Context(args, t0)
     ctx.tag = tag
 
