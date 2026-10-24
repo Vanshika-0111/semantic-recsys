@@ -152,6 +152,7 @@ class TfidfKNNRecommender:
     weighting: str = "liked"           # "liked" | "centered"
     max_history: int | None = None
     threshold: float = 4.0
+    half_life: float | None = None     # Day 5 recency decay (see history_weights)
     ngram_max: int = 2
     min_df: int = 2
     max_df: float = 0.5
@@ -187,7 +188,7 @@ class TfidfKNNRecommender:
     def user_weights(self, history: pd.DataFrame, users: np.ndarray) -> sp.csr_matrix:
         """history: rows (userId, movieId, rating) in TIME ORDER per user."""
         return history_weights(history, users, self.index, self.weighting,
-                               self.max_history, self.threshold)
+                               self.max_history, self.threshold, self.half_life)
 
     def recommend(self, weights: sp.csr_matrix, seen: sp.csr_matrix, k: int,
                   fallback: np.ndarray, batch_size: int = 1000) -> np.ndarray:
@@ -214,26 +215,40 @@ ItemKNNRecommender = TfidfKNNRecommender
 
 def history_weights(history: pd.DataFrame, users: np.ndarray, index: ItemIndex,
                     weighting: str = "liked", max_history: int | None = None,
-                    threshold: float = 4.0) -> sp.csr_matrix:
-    """User x item weight matrix W used by every content model (TF-IDF Day 3, embeddings Day 4).
+                    threshold: float = 4.0, half_life: float | None = None) -> sp.csr_matrix:
+    """User x item weight matrix W used by every content model (TF-IDF Day 3, embeddings Day 4-5).
 
     history: rows (userId, movieId, rating) in TIME ORDER per user.
       "liked"    : w = 1 if rating >= threshold (other rows dropped)
+      "graded"   : w = rating - threshold + 1 for liked rows  (4★ -> 1, 4.5★ -> 1.5, 5★ -> 2;
+                   same gain as graded NDCG) — a 5★ counts twice as much as a 4★
       "centered" : w = rating - user's mean rating
+    half_life (Day 5) multiplies each weight by 0.5 ** (p / half_life), where p = 0 for the
+      user's most recent weighted row, 1 for the one before ... So with half_life = 10 the 10th
+      most recent liked movie counts half, the 20th a quarter. Positions, not days: EDA showed
+      most users rate in one bulk session, so clock time carries almost no order information.
     max_history keeps only each user's last N weighted rows.
     """
     h = history
-    if weighting == "liked":
-        h = h[h["rating"].to_numpy() >= threshold]
-        w = np.ones(len(h), dtype=np.float32)
+    if weighting in ("liked", "graded"):
+        r = h["rating"].to_numpy()
+        h = h[r >= threshold]
+        r = r[r >= threshold]
+        w = (np.ones(len(h)) if weighting == "liked" else r - threshold + 1.0).astype(np.float32)
     elif weighting == "centered":
         mean = h.groupby("userId")["rating"].transform("mean").to_numpy()
         w = (h["rating"].to_numpy() - mean).astype(np.float32)
     else:
         raise ValueError(f"unknown weighting {weighting!r}")
-    if max_history:
-        keep = _pos_from_end(h["userId"].to_numpy()) < max_history
-        h, w = h[keep], w[keep]
+    if max_history or half_life:
+        pos = _pos_from_end(h["userId"].to_numpy())
+        if half_life:
+            if half_life <= 0:
+                raise ValueError("half_life must be positive")
+            w = (w * np.power(0.5, pos / float(half_life))).astype(np.float32)
+        if max_history:
+            keep = pos < max_history
+            h, w = h[keep], w[keep]
     return user_item_matrix(h, users, index, values=w)
 
 

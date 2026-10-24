@@ -132,15 +132,19 @@ class FlatIndex:
     """
 
     def __init__(self, vectors: np.ndarray, ids: np.ndarray) -> None:
-        import faiss
-
         V = np.ascontiguousarray(vectors, dtype=np.float32)
         self.ids = np.asarray(ids, dtype=np.int64)
         if V.shape[0] != len(self.ids):
             raise ValueError("one id per vector required")
         self.vectors = V
-        self.index = faiss.IndexFlatIP(V.shape[1])
+        self.index = self._build_index(V.shape[1])
         self.index.add(V)
+
+    def _build_index(self, dim: int):
+        """The FAISS structure. Subclasses (ann.HNSWIndex) override only this method."""
+        import faiss
+
+        return faiss.IndexFlatIP(dim)
 
     @property
     def ntotal(self) -> int:
@@ -202,10 +206,11 @@ class FlatIndex:
 class EmbeddingRecommender:
     item_vectors: np.ndarray            # rows follow index.ids, unit length
     index: ItemIndex
-    weighting: str = "liked"            # "liked" | "centered"   (same meaning as Day 3)
+    weighting: str = "liked"            # "liked" | "graded" | "centered"  (see history_weights)
     max_history: int | None = None
     threshold: float = 4.0
     center: bool = False                # subtract the catalog mean first (see center_vectors)
+    half_life: float | None = None      # Day 5: recency decay in liked-movie positions
 
     def __post_init__(self) -> None:
         if self.item_vectors.shape[0] != len(self.index):
@@ -216,7 +221,7 @@ class EmbeddingRecommender:
     def user_profiles(self, history: pd.DataFrame, users: np.ndarray) -> np.ndarray:
         """(len(users), d) unit profiles; users with no usable history get a zero row."""
         W = history_weights(history, users, self.index, self.weighting,
-                            self.max_history, self.threshold)
+                            self.max_history, self.threshold, self.half_life)
         return l2_normalize(np.asarray(W @ self.item_vectors))
 
     def scores(self, profiles: np.ndarray) -> np.ndarray:

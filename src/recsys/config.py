@@ -62,3 +62,20 @@ EMB_KNN_NEIGHBORS = KNN_NEIGHBORS
 SANITY_MOVIES = [("Toy Story", 1995), ("The Matrix", 1999), ("Titanic", 1997),
                  ("Spirited Away", 2001), ("The Dark Knight", 2008), ("The Notebook", 2004),
                  ("Alien", 1979), ("Inception", 2010)]
+
+# --- Day 5: warm-user profiles, candidate recall, Flat vs HNSW ---
+# Profile = normalise(Σ w(u,i)·v_i) on the Day 4 encoder + mean-centering (read from day04 json).
+#   weighting : liked (1 per movie rated >= 4)  |  graded (4★ -> 1, 4.5★ -> 1.5, 5★ -> 2)
+#   half_life : recency decay in liked-movie positions (None = no decay; 10 = the 10th most
+#               recent liked movie counts half). Positions, not days (bulk rating sessions).
+PROFILE_GRID = [{"weighting": w, "half_life": h}
+                for w in ("liked", "graded") for h in (None, 3, 5, 10, 25, 50, 100)]
+CANDIDATE_BUDGETS = (50, 100, 200, 500)       # stage-1 sizes: recall@N of the candidate set
+CANDIDATE_MIX_BUDGET = 200                    # Day 8 plan: FAISS top-200 + popular fill
+CANDIDATE_MIX_SHARES = (1.0, 0.75, 0.5, 0.25, 0.0)   # share of the 200 taken from embeddings
+HNSW_M = (8, 16, 32, 64)                      # graph links per movie
+HNSW_EF_CONSTRUCTION = 200
+HNSW_EF_SEARCH = (16, 32, 64, 128, 256, 512)  # query-time candidate list (FAISS uses >= k)
+ANN_KS = (10, 200)                            # top-10 (a recommendation list), top-200 (candidates)
+ANN_QUERIES = 2000                            # real user-profile queries from validation users
+ANN_TARGET_RECALL = 0.95                      # "good enough" operating point for the API
