@@ -186,19 +186,8 @@ class TfidfKNNRecommender:
     # --- user side ---
     def user_weights(self, history: pd.DataFrame, users: np.ndarray) -> sp.csr_matrix:
         """history: rows (userId, movieId, rating) in TIME ORDER per user."""
-        h = history
-        if self.weighting == "liked":
-            h = h[h["rating"].to_numpy() >= self.threshold]
-            w = np.ones(len(h), dtype=np.float32)
-        elif self.weighting == "centered":
-            mean = h.groupby("userId")["rating"].transform("mean").to_numpy()
-            w = (h["rating"].to_numpy() - mean).astype(np.float32)
-        else:
-            raise ValueError(f"unknown weighting {self.weighting!r}")
-        if self.max_history:
-            keep = _pos_from_end(h["userId"].to_numpy()) < self.max_history
-            h, w = h[keep], w[keep]
-        return user_item_matrix(h, users, self.index, values=w)
+        return history_weights(history, users, self.index, self.weighting,
+                               self.max_history, self.threshold)
 
     def recommend(self, weights: sp.csr_matrix, seen: sp.csr_matrix, k: int,
                   fallback: np.ndarray, batch_size: int = 1000) -> np.ndarray:
@@ -216,6 +205,36 @@ class TfidfKNNRecommender:
         """Column of the history item that contributes most to `item_col` (Day 11 explanations)."""
         col = self.sim[:, item_col].toarray().ravel()[history_cols]
         return int(history_cols[np.argmax(col)]) if col.size and col.max() > 0 else None
+
+
+# The item-kNN scoring above works for ANY item-item similarity matrix (TF-IDF on Day 3,
+# sentence embeddings on Day 4), so it is also exposed under a representation-neutral name.
+ItemKNNRecommender = TfidfKNNRecommender
+
+
+def history_weights(history: pd.DataFrame, users: np.ndarray, index: ItemIndex,
+                    weighting: str = "liked", max_history: int | None = None,
+                    threshold: float = 4.0) -> sp.csr_matrix:
+    """User x item weight matrix W used by every content model (TF-IDF Day 3, embeddings Day 4).
+
+    history: rows (userId, movieId, rating) in TIME ORDER per user.
+      "liked"    : w = 1 if rating >= threshold (other rows dropped)
+      "centered" : w = rating - user's mean rating
+    max_history keeps only each user's last N weighted rows.
+    """
+    h = history
+    if weighting == "liked":
+        h = h[h["rating"].to_numpy() >= threshold]
+        w = np.ones(len(h), dtype=np.float32)
+    elif weighting == "centered":
+        mean = h.groupby("userId")["rating"].transform("mean").to_numpy()
+        w = (h["rating"].to_numpy() - mean).astype(np.float32)
+    else:
+        raise ValueError(f"unknown weighting {weighting!r}")
+    if max_history:
+        keep = _pos_from_end(h["userId"].to_numpy()) < max_history
+        h, w = h[keep], w[keep]
+    return user_item_matrix(h, users, index, values=w)
 
 
 def _pos_from_end(user_ids: np.ndarray) -> np.ndarray:

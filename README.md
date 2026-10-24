@@ -16,13 +16,14 @@ python scripts/prepare_data.py     # join + k-core filter -> data/processed/
 python scripts/eda.py              # figures + reports/eda_summary.md
 python scripts/make_split.py       # Day 2: create + freeze the evaluation split
 python scripts/run_baselines.py    # Day 3: popularity + TF-IDF baselines -> reports/results/
+python scripts/run_embeddings.py   # Day 4: MiniLM vs bge-small item embeddings + FAISS Flat
 pytest -q
 ```
 
 ## Repo layout
 
 ```
-src/recsys/      library code (config, data, split, metrics, text, baselines)
+src/recsys/      library code (config, data, split, metrics, text, baselines, embeddings)
 scripts/         runnable pipeline steps
 tests/           unit tests
 reports/         EDA summary, figures, results/ (metric tables per day)
@@ -76,6 +77,24 @@ top-K), so every later model is compared under identical rules.
   and genre intra-list diversity @10.
 
 Results: `reports/results/day03_baselines.md`.
+
+## Semantic item embeddings (Day 4)
+
+- The same item document as TF-IDF is encoded by two small sentence encoders:
+  `all-MiniLM-L6-v2` (6 layers) and `bge-small-en-v1.5` (12 layers, retrieval-tuned), both 384-d.
+  Vectors are L2-normalised, so a dot product is a cosine similarity. bge's query instruction
+  prefix is used only for short text queries (cold-start onboarding), never for documents.
+- Vectors are cached in `data/embeddings/` together with a SHA-256 of the documents, so a change
+  to the document template can never silently reuse stale vectors.
+- **FAISS `IndexFlatIP`** = exact nearest-neighbour search (every item is compared). It is the
+  ground truth for the approximate HNSW index (Day 5) and the candidate generator (Day 8).
+  A unit test checks it returns exactly the brute-force numpy top-K.
+- **Embedding recommender**: profile = normalised sum of the user's history vectors, with the
+  same weights as TF-IDF (`liked` / `centered`, all or last 50); score = cosine(profile, movie);
+  same tie-break, seen-item masking and top-K as every other model. Encoder and profile setting
+  are chosen on validation only.
+
+Results: `reports/results/day04_embeddings.md`, examples: `reports/results/day04_similar_movies.md`.
 
 ## Data attribution
 

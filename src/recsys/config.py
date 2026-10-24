@@ -39,3 +39,26 @@ POP_MODES = ("count", "liked")
 TFIDF_GRID = [{"weighting": w, "max_history": h}
               for w in ("liked", "centered") for h in (None, 50)]
 TFIDF_DEFAULT = {"weighting": "liked", "max_history": None}
+
+# --- Day 4: sentence embeddings + FAISS ---
+EMB_DIR = DATA_DIR / "embeddings"               # <key>.npy / .ids.npy / .json / .faiss (git-ignored)
+# Two small (384-dim) encoders compared on the SAME item documents as TF-IDF.
+#   minilm    : 6 layers, trained on 1B sentence pairs; the standard fast baseline.
+#   bge-small : 12 layers, contrastively trained for retrieval; stronger on MTEB, ~2x slower.
+# bge wants an instruction prefix on short search QUERIES (Day 6 text onboarding),
+# never on the documents themselves. MiniLM uses no prefix.
+EMB_MODELS = {
+    "minilm": {"hf_name": "sentence-transformers/all-MiniLM-L6-v2", "query_prefix": ""},
+    "bge-small": {"hf_name": "BAAI/bge-small-en-v1.5",
+                  "query_prefix": "Represent this sentence for searching relevant passages: "},
+}
+EMB_BATCH_SIZE = 64          # safe on an 8 GB CPU laptop; raise to 256 on a GPU
+# Day 4 run 1 (centroid only, raw vectors) lost clearly to TF-IDF; 'liked' beat 'centered'
+# weights for both encoders. Grid now: scoring method x mean-centering x history length.
+#   centroid = cos(user mean vector, movie)  |  knn = same 200-neighbour item-kNN as TF-IDF
+EMB_GRID = [{"method": m, "center": c, "max_history": h}
+            for m in ("centroid", "knn") for c in (False, True) for h in (None, 50)]
+EMB_KNN_NEIGHBORS = KNN_NEIGHBORS
+SANITY_MOVIES = [("Toy Story", 1995), ("The Matrix", 1999), ("Titanic", 1997),
+                 ("Spirited Away", 2001), ("The Dark Knight", 2008), ("The Notebook", 2004),
+                 ("Alien", 1979), ("Inception", 2010)]
