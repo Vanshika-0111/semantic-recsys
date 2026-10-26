@@ -34,46 +34,35 @@ Usage
 """
 from __future__ import annotations
 
-import os
 import sys
+from pathlib import Path
 
-os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")     # torch/faiss OpenMP clash on Windows
-os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
-os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
-try:                     # same Windows SSL fix as Day 4 (Hugging Face may check for model updates)
-    import truststore
-    truststore.inject_into_ssl()
-except ImportError:
-    pass
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))   # works without `pip install -e .`
+from recsys.experiment import setup_runtime  # noqa: E402
+
+setup_runtime()          # Windows OpenMP + SSL fixes; must run before torch / faiss are imported
 
 import argparse  # noqa: E402
 import gc  # noqa: E402
 import json  # noqa: E402
 import time  # noqa: E402
-from pathlib import Path  # noqa: E402
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 from recsys import config  # noqa: E402
 from recsys import split as S  # noqa: E402
-from recsys.baselines import (ItemIndex, PopularityRecommender,  # noqa: E402
-                              popularity_scores, user_item_matrix)
+from recsys.baselines import PopularityRecommender, popularity_scores, user_item_matrix  # noqa: E402
 from recsys.coldstart import (ColdStartRecommender, TimePopularity, combine_profiles,  # noqa: E402
                               first_liked, genre_match, genre_query, onboarding_genres,
                               onboarding_time, pool_rerank_topk, popularity_prior,
                               query_profiles)
-from recsys.embeddings import (EmbeddingRecommender, documents_hash, encode_texts,  # noqa: E402
-                               load_embeddings, load_encoder)
+from recsys.embeddings import EmbeddingRecommender, encode_texts, load_encoder  # noqa: E402
+from recsys.experiment import (COLS, KMAX, TCOLS, chosen_settings, eval_users,  # noqa: E402
+                               head_items, load_catalog, load_item_vectors, log, md_table, only,
+                               open_results, read_results, row, save_results, split_fingerprint)
 from recsys.metrics import beyond_accuracy, evaluate, paired_bootstrap  # noqa: E402
-from recsys.text import build_item_documents, genre_matrix  # noqa: E402
-from run_baselines import eval_users, log, md_table, only, row  # noqa: E402  (Day 7: move to src)
 
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-COLS = ["userId", "movieId", "rating"]
-TCOLS = ["userId", "movieId", "rating", "timestamp"]
-KMAX = max(config.EVAL_KS)
 SHOW = ["ndcg@5", "ndcg@10", "ndcg@20", "recall@10", "mrr@10", "hit_rate@10"]
 OURS = "semantic rerank (ours)"
 
@@ -93,29 +82,15 @@ class Context:
 
     def __init__(self, args, t0: float) -> None:
         self.args, self.t0 = args, t0
-        items = pd.read_parquet(config.PROCESSED_DIR / "items.parquet")
-        self.index = ItemIndex(items["movieId"])
-        self.items = items.set_index("movieId").loc[self.index.ids].reset_index()
-        docs = build_item_documents(self.items)
-        self.genres, self.vocab = genre_matrix(self.items)
-        self.label = dict(zip(self.items["movieId"], self.items["title_clean"] + " (" +
-                              self.items["year"].astype("string").fillna("?") + ")"))
-
-        def read(name: str) -> dict:
-            p = config.RESULTS_DIR / name
-            return json.loads(p.read_text()) if p.exists() else {}
-
-        self.day3 = read("day03_baselines.json")
-        sel4, sel5 = read("day04_embeddings.json").get("selected", {}), read("day05_retrieval.json").get("selected", {})
-        self.model_key = sel5.get("model", sel4.get("model", "bge-small"))
-        self.center = bool(sel5.get("center", sel4.get("center", True)))
-        self.profile = {"weighting": sel5.get("weighting", "graded"), "half_life": sel5.get("half_life", 5)}
-        self.pop_mode = self.day3.get("selected", {}).get("popularity", {}).get("mode", "liked")
-        cached = load_embeddings(config.EMB_DIR, self.model_key, self.index.ids, documents_hash(docs))
-        if cached is None:
-            raise SystemExit(f"{self.model_key}: no cached vectors for these documents — "
-                             "run scripts/run_embeddings.py --stages embed first")
-        self.raw = cached[0]
+        cat = load_catalog()
+        self.index, self.items, self.label = cat.index, cat.items, cat.label
+        self.genres, self.vocab = cat.genres, cat.vocab
+        chosen = chosen_settings()          # Day 3 popularity, Day 4 encoder, Day 5 profile
+        self.day3 = read_results("day03_baselines.json")
+        self.model_key, self.center = chosen["encoder"], chosen["center"]
+        self.profile = chosen["profile"]
+        self.pop_mode = chosen["popularity_mode"]
+        self.raw = load_item_vectors(cat, self.model_key)
         self.emb = EmbeddingRecommender(self.raw, self.index, threshold=config.RELEVANCE_THRESHOLD,
                                         center=self.center, **self.profile)
         self.V = self.emb.item_vectors                        # centered (or normalised) item vectors
@@ -161,9 +136,7 @@ class Context:
         tp = TimePopularity.from_ratings(fit, self.index, config.RELEVANCE_THRESHOLD,
                                          config.TIME_BUCKET_DAYS)
         fallback = popularity_scores(fit, self.index, self.pop_mode, config.RELEVANCE_THRESHOLD)
-        counts = np.bincount(self.index.cols(fit["movieId"].to_numpy()), minlength=len(self.index))
-        head = self.index.ids[np.argsort(-counts, kind="stable")
-                              [:int(round(config.HEAD_SHARE * len(self.index)))]]
+        head = head_items(fit["movieId"].to_numpy(), self.index)
         pop = PopularityRecommender(self.pop_mode, config.RELEVANCE_THRESHOLD)
         pop.index, pop.score = self.index, fallback
         chosen = self.chosen_genres(seeds, users)
@@ -592,10 +565,8 @@ def main() -> None:
     if args.smoke:
         args.tune_users, args.test_users, args.latency_queries = 2000, 1000, 30
     tag = "day06_coldstart_smoke" if args.smoke else "day06_coldstart"
-    config.RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    out_json = config.RESULTS_DIR / f"{tag}.json"
+    out_json, results = open_results(tag)
     fig_path = config.FIG_DIR / f"{tag.replace('coldstart', 'cold_start')}_ndcg_vs_seeds.png"
-    results = json.loads(out_json.read_text()) if out_json.exists() else {}
     t0 = time.time()
     if args.plot_only:
         if "test" not in results:
@@ -603,17 +574,16 @@ def main() -> None:
         plot_seeds(results, fig_path, results.get("selected", {}).get("model", "bge-small"))
         log(f"redrew {fig_path.relative_to(config.ROOT)}", t0)
         return
-    results["split_fingerprint"] = json.loads(
-        (config.SPLIT_DIR / S.MANIFEST_FILE).read_text())["fingerprint"]
+    results["split_fingerprint"] = split_fingerprint()
     ctx = Context(args, t0)
     ctx.tag = tag
     for stage, fn in (("tune", stage_tune), ("test", stage_test), ("examples", stage_examples)):
         if stage in args.stages:
             log(f"--- stage {stage} ---", t0)
             fn(ctx, results)
-            out_json.write_text(json.dumps(results, indent=2))       # save after every stage
+            save_results(out_json, results)       # save after every stage
     results["seconds_last_run"] = round(time.time() - t0, 1)
-    out_json.write_text(json.dumps(results, indent=2))
+    save_results(out_json, results)
     write_md(results, out_json.with_suffix(".md"))
     if "test" in results:
         plot_seeds(results, fig_path, ctx.model_key)

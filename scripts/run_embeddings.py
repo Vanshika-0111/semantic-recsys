@@ -22,29 +22,19 @@ Usage
 """
 from __future__ import annotations
 
-import os
 import sys
+from pathlib import Path
 
-# torch and faiss each ship an OpenMP runtime on Windows; loading both in one process can
-# abort with "OMP: Error #15 ... libiomp5md.dll already initialized". This is the standard
-# workaround (set before either library is imported).
-os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
-os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
-os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
-try:                     # same Windows SSL fix as download_data.py (model download from HF)
-    import truststore
-    truststore.inject_into_ssl()
-except ImportError:
-    pass
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))   # works without `pip install -e .`
+from recsys.experiment import setup_runtime  # noqa: E402
+
+setup_runtime()          # Windows OpenMP + SSL fixes; must run before torch / faiss are imported
 
 import argparse  # noqa: E402
 import gc  # noqa: E402
 import json  # noqa: E402
 import time  # noqa: E402
-from pathlib import Path  # noqa: E402
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 from recsys import config  # noqa: E402
 from recsys import split as S  # noqa: E402
 from recsys.baselines import (ItemIndex, ItemKNNRecommender,  # noqa: E402
@@ -53,16 +43,15 @@ from recsys.embeddings import (EmbeddingRecommender, FlatIndex, documents_hash, 
                                encode_texts, load_embeddings, load_encoder,
                                neighbor_agreement, save_embeddings, token_lengths,
                                topk_from_sparse)
+from recsys.experiment import (COLS, KMAX, Catalog, chosen_settings, eval_users,  # noqa: E402
+                               head_items, load_catalog, log, md_table, only, open_results, row,
+                               save_results, split_fingerprint)
 from recsys.metrics import PAD, beyond_accuracy, evaluate  # noqa: E402
-from recsys.text import build_item_documents, genre_matrix  # noqa: E402
-from run_baselines import eval_users, log, md_table, only, row  # noqa: E402  (Day 7: move to src)
 
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import scipy.sparse as sp  # noqa: E402
 
-COLS = ["userId", "movieId", "rating"]
-KMAX = max(config.EVAL_KS)
 N_NEIGHBORS = 10
 
 
@@ -138,15 +127,13 @@ def stage_embed(models, docs, index, results, args, t0) -> None:
         gc.collect()
 
 
-def stage_neighbors(models, docs, items, index, results, args, t0) -> None:
+def stage_neighbors(models, cat: Catalog, results, args, t0) -> None:
+    docs, items, index, genres, label = cat.docs, cat.items, cat.index, cat.genres, cat.label
     h = documents_hash(docs)
-    genres, _ = genre_matrix(items)
     years = items["year"].astype("float64").to_numpy()
     rng = np.random.default_rng(config.SEED)
     sanity = [(t, y, find_movie(items, t, y)) for t, y in config.SANITY_MOVIES]
     sanity = [(t, y, m) for t, y, m in sanity if m is not None]
-    label = dict(zip(items["movieId"], items["title_clean"] + " (" +
-                     items["year"].astype("string").fillna("?") + ")"))
     lists: dict[str, dict[int, list[str]]] = {}
     rows = []
 
@@ -193,25 +180,21 @@ def stage_neighbors(models, docs, items, index, results, args, t0) -> None:
     write_similar_md(sanity, lists, label)
 
 
-def stage_tune(models, docs, items, index, results, args, t0) -> None:
-    h = documents_hash(docs)
-    day3 = config.RESULTS_DIR / "day03_baselines.json"
-    sel3 = json.loads(day3.read_text()).get("selected", {}) if day3.exists() else {}
-    pop_mode = sel3.get("popularity", {}).get("mode", "liked")
-    tf_cfg = sel3.get("tfidf_knn", dict(config.TFIDF_DEFAULT))
+def stage_tune(models, cat: Catalog, results, args, t0) -> None:
+    index, genres = cat.index, cat.genres
+    h = documents_hash(cat.docs)
+    chosen = chosen_settings()                     # Day 3 choices (popularity mode, TF-IDF)
+    pop_mode, tf_cfg = chosen["popularity_mode"], chosen["tfidf"]
 
     train = S.load_view("train", config.SPLIT_DIR, columns=COLS)
     val = S.load_view("val", config.SPLIT_DIR, columns=COLS)
     users = eval_users(val, args.tune_users, config.SEED)       # same sample as Day 3
-    counts = np.bincount(index.cols(train["movieId"].to_numpy()), minlength=len(index))
-    head = index.ids[np.argsort(-counts, kind="stable")[:int(round(config.HEAD_SHARE * len(index)))]]
+    head = head_items(train["movieId"].to_numpy(), index)
     pop = PopularityRecommender(pop_mode, config.RELEVANCE_THRESHOLD).fit(train, index)
-    del counts
     val, train_u = only(val, users), only(train, users)
     del train
     gc.collect()
     seen = user_item_matrix(train_u, users, index, dtype=np.int8)
-    genres, _ = genre_matrix(items)
     log(f"tune: {len(users):,} val users (fit on train)", t0)
 
     runs = []
@@ -295,28 +278,22 @@ def main() -> None:
     if args.smoke:
         args.tune_users, args.latency_queries = 3000, 200
     tag = "day04_embeddings_smoke" if args.smoke else "day04_embeddings"
-    config.RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    out_json = config.RESULTS_DIR / f"{tag}.json"
-    results = json.loads(out_json.read_text()) if out_json.exists() else {}
-    results["split_fingerprint"] = json.loads(
-        (config.SPLIT_DIR / S.MANIFEST_FILE).read_text())["fingerprint"]
+    out_json, results = open_results(tag)
+    results["split_fingerprint"] = split_fingerprint()
     t0 = time.time()
 
-    items = pd.read_parquet(config.PROCESSED_DIR / "items.parquet")
-    index = ItemIndex(items["movieId"])
-    items = items.set_index("movieId").loc[index.ids].reset_index()
-    docs = build_item_documents(items)
-    log(f"catalog: {len(index):,} movies; models: {args.models}", t0)
+    cat = load_catalog()
+    log(f"catalog: {len(cat.index):,} movies; models: {args.models}", t0)
 
     if "embed" in args.stages:
-        stage_embed(args.models, docs, index, results, args, t0)
+        stage_embed(args.models, cat.docs, cat.index, results, args, t0)
     if "neighbors" in args.stages:
-        stage_neighbors(args.models, docs, items, index, results, args, t0)
+        stage_neighbors(args.models, cat, results, args, t0)
     if "tune" in args.stages:
-        stage_tune(args.models, docs, items, index, results, args, t0)
+        stage_tune(args.models, cat, results, args, t0)
 
     results["seconds_last_run"] = round(time.time() - t0, 1)
-    out_json.write_text(json.dumps(results, indent=2))
+    save_results(out_json, results)
     write_md(results, out_json.with_suffix(".md"))
     log(f"wrote {out_json.relative_to(config.ROOT)} and .md", t0)
 

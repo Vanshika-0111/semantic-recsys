@@ -1,0 +1,30 @@
+{
+  "last_run": "2026-10-26T11:53:18",
+  "git": {
+    "commit": "f40678c726d935fca494784d7c681a965b06600c",
+    "uncommitted_changes": true
+  },
+  "platform": "Windows 11 (AMD64)",
+  "versions": {
+    "python": "3.13.5",
+    "numpy": "2.5.4",
+    "pandas": "3.0.6",
+    "pyarrow": "26.0.0",
+    "scipy": "1.18.1",
+    "scikit-learn": "1.9.1",
+    "faiss-cpu": "1.15.1",
+    "torch": "2.14.1",
+    "sentence-transformers": "6.2.0",
+    "lightgbm": "4.7.0",
+    "matplotlib": "3.11.2"
+  },
+  "split_fingerprint": "a99079d4a40ab6808529cf3166bbc02268adc9709f06d24378ee322587988152",
+  "results_on_same_split": true,
+  "steps": {
+    "split": {
+      "action": "verify",
+      "seconds": 7.7,
+      "finished": "2026-10-26T11:53:18"
+    }
+  }
+}

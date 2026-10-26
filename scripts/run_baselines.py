@@ -24,38 +24,19 @@ import sys
 import time
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))   # works without `pip install -e .`
 from recsys import config  # noqa: E402
 from recsys import split as S  # noqa: E402
 from recsys.baselines import (ItemIndex, PopularityRecommender,  # noqa: E402
                               TfidfKNNRecommender, popularity_scores, user_item_matrix)
+from recsys.experiment import (COLS, KMAX, SHOW, eval_users, head_items, load_catalog,  # noqa: E402
+                               log, md_table, only, open_results, row, save_results,
+                               split_fingerprint)
 from recsys.metrics import beyond_accuracy, evaluate  # noqa: E402
-from recsys.text import build_item_documents, genre_matrix  # noqa: E402
 
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import scipy.sparse as sp  # noqa: E402
-
-COLS = ["userId", "movieId", "rating"]
-KMAX = max(config.EVAL_KS)
-SHOW = ["ndcg@5", "ndcg@10", "ndcg@20", "recall@10", "precision@10", "mrr@10", "hit_rate@10"]
-
-
-def log(msg: str, t0: float) -> None:
-    print(f"[{time.time() - t0:6.0f}s] {msg}", flush=True)
-
-
-def eval_users(truth: pd.DataFrame, limit: int | None, seed: int) -> np.ndarray:
-    """Users with >= 1 relevant held-out item (the only ones metrics are defined for)."""
-    users = np.unique(truth.loc[truth["rating"] >= config.RELEVANCE_THRESHOLD, "userId"]
-                      .to_numpy(np.int64))
-    if limit and limit < len(users):
-        users = np.sort(np.random.default_rng(seed).choice(users, size=limit, replace=False))
-    return users
-
-
-def only(df: pd.DataFrame, users: np.ndarray) -> pd.DataFrame:
-    return df[np.isin(df["userId"].to_numpy(), users)]
 
 
 def similarity(docs: pd.Series, index: ItemIndex, n: int, rebuild: bool, t0: float) -> sp.csr_matrix:
@@ -73,27 +54,6 @@ def similarity(docs: pd.Series, index: ItemIndex, n: int, rebuild: bool, t0: flo
     return model.sim
 
 
-def row(name: str, m: dict, extra: dict | None = None) -> dict:
-    d = {"model": name, **{k: round(v, 5) for k, v in m.items() if isinstance(v, float)},
-         "n_users": m.get("n_users")}
-    if extra:
-        d.update({k: round(v, 5) if isinstance(v, float) else v for k, v in extra.items()})
-    return d
-
-
-def md_table(rows: list[dict], cols: list[str]) -> str:
-    head = "| " + " | ".join(cols) + " |\n|" + "|".join("---" if c in ("model", "config") else "---:"
-                                                       for c in cols) + "|\n"
-    body = ""
-    for r in rows:
-        cells = []
-        for c in cols:
-            v = r.get(c, "")
-            cells.append(f"{v:.4f}" if isinstance(v, float) else f"{v:,}" if isinstance(v, int) else str(v))
-        body += "| " + " | ".join(cells) + " |\n"
-    return head + body
-
-
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--stages", nargs="+", default=["tune", "test", "cold"],
@@ -108,20 +68,13 @@ def main() -> None:
     if args.smoke:
         args.tune_users, args.test_users = 3000, 5000
     tag = "day03_baselines_smoke" if args.smoke else "day03_baselines"
-    config.RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    config.RUNS_DIR.mkdir(parents=True, exist_ok=True)
-    out_json = config.RESULTS_DIR / f"{tag}.json"
-    results = json.loads(out_json.read_text()) if out_json.exists() else {}
-    results["split_fingerprint"] = json.loads(
-        (config.SPLIT_DIR / S.MANIFEST_FILE).read_text())["fingerprint"]
+    out_json, results = open_results(tag)
+    results["split_fingerprint"] = split_fingerprint()
     t0 = time.time()
 
     # ---------------- catalog + item text ----------------
-    items = pd.read_parquet(config.PROCESSED_DIR / "items.parquet")
-    index = ItemIndex(items["movieId"])
-    items = items.set_index("movieId").loc[index.ids].reset_index()
-    docs = build_item_documents(items)
-    genres, _ = genre_matrix(items)
+    cat = load_catalog()
+    index, docs, genres = cat.index, cat.docs, cat.genres
     log(f"catalog: {len(index):,} movies; example document:\n    {docs.iloc[0][:200]}...", t0)
     sim = similarity(docs, index, args.neighbors, args.rebuild_knn, t0)
 
@@ -176,9 +129,8 @@ def main() -> None:
         users = eval_users(test, args.test_users, config.SEED)
         test = only(test, users)
         seen = user_item_matrix(only(train_full, users), users, index, dtype=np.int8)
-        counts = np.bincount(index.cols(train_full["movieId"].to_numpy()), minlength=len(index))
-        n_head = int(round(config.HEAD_SHARE * len(index)))
-        head = index.ids[np.argsort(-counts, kind="stable")[:n_head]]
+        head = head_items(train_full["movieId"].to_numpy(), index)
+        n_head = len(head)
         log(f"test: {len(users):,} users, train_full {len(train_full):,} ratings", t0)
 
         pop = PopularityRecommender(pop_mode, config.RELEVANCE_THRESHOLD).fit(train_full, index)
@@ -243,7 +195,7 @@ def main() -> None:
                                  "note": "0 seeds: TF-IDF has no profile and falls back to popularity"}
 
     results["seconds_last_run"] = round(time.time() - t0, 1)
-    out_json.write_text(json.dumps(results, indent=2))
+    save_results(out_json, results)
     write_markdown(results, out_json.with_suffix(".md"))
     log(f"wrote {out_json.relative_to(config.ROOT)} and .md", t0)
 

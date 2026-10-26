@@ -10,3 +10,5 @@ __pycache__/
 kaggle.json
 .env
 .DS_Store
+*.egg-info/
+build/

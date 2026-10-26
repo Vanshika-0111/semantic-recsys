@@ -5,29 +5,55 @@ followed by a LightGBM learning-to-rank model, with zero-shot cold-start support
 Data: MovieLens 32M joined with TMDB metadata.
 
 > Demo link, results table and charts go here (Day 14).
+> Current headline numbers: [`reports/results/summary.md`](reports/results/summary.md) (generated, not hand-written).
 
-## Quickstart
+## Quickstart — reproduce everything with one command
 
 ```bash
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python scripts/download_data.py    # MovieLens 32M + Kaggle TMDB (needs Kaggle API token)
-python scripts/prepare_data.py     # join + k-core filter -> data/processed/
-python scripts/eda.py              # figures + reports/eda_summary.md
-python scripts/make_split.py       # Day 2: create + freeze the evaluation split
-python scripts/run_baselines.py    # Day 3: popularity + TF-IDF baselines -> reports/results/
-python scripts/run_embeddings.py   # Day 4: MiniLM vs bge-small item embeddings + FAISS Flat
+pip install -e .                                     # the src/recsys package
+python scripts/run_pipeline.py --dry-run             # what would run
+python scripts/run_pipeline.py                       # download -> ... -> cold start -> summary
 pytest -q
 ```
+
+`run_pipeline.py` runs each step's script in order and **skips a step whose outputs already exist**,
+so re-running costs seconds. The frozen split is never rebuilt — it is re-verified (SHA-256
+fingerprint) on every run and the pipeline stops if it changed. Each run writes
+`reports/results/pipeline_manifest.json` (git commit, OS, Python + package versions, split
+fingerprint, seconds per step) and regenerates `reports/results/summary.md`, which also checks that
+every results file was computed on the same split. Useful flags: `--smoke` (quick check),
+`--from retrieval --force` (redo a step and everything after it), `--steps baselines --force`.
+
+From nothing, on an 8 GB CPU laptop: about 2 h, mostly encoding the 23k movie documents twice
+(Day 4, cached afterwards); with data and vectors in place, all experiments take ~30 min.
+A step counts as done only if its results file matches the current split *and* its cached files in
+`data/` exist, so on a fresh clone (results committed, `data/` empty) every step re-runs.
+
+| step | script | what it does |
+|---|---|---|
+| download | `download_data.py` | MovieLens 32M + Kaggle TMDB dump (needs a Kaggle API token) |
+| prepare | `prepare_data.py` | join + k-core filter → `data/processed/` |
+| eda | `eda.py` | figures + `reports/eda_summary.md` |
+| split | `make_split.py` | Day 2: create + freeze the evaluation split (`--verify` afterwards) |
+| baselines | `run_baselines.py` | Day 3: popularity + TF-IDF |
+| embeddings | `run_embeddings.py` | Day 4: MiniLM vs bge-small + FAISS Flat |
+| retrieval | `run_retrieval.py` | Day 5: warm profiles, candidate recall, Flat vs HNSW |
+| coldstart | `run_coldstart.py` | Day 6: cold-start onboarding (seeds / text) |
+| summary | `summarize_results.py` | one page of headline numbers from all days |
+
+Every script also runs on its own and has `--smoke` and `--stages …`.
 
 ## Repo layout
 
 ```
-src/recsys/      library code (config, data, split, metrics, text, baselines, embeddings)
-scripts/         runnable pipeline steps
-tests/           unit tests
-reports/         EDA summary, figures, results/ (metric tables per day)
-data/            raw + processed data (git-ignored)
+src/recsys/      library code: config, data, split, metrics, text, baselines, embeddings, ann,
+                 candidates, coldstart, experiment (shared script plumbing), summary
+scripts/         runnable pipeline steps + run_pipeline.py
+tests/           unit tests (expected values hand-computed in comments)
+reports/         EDA summary, figures, results/ (json + markdown per day, summary.md, manifest)
+data/            raw + processed data, caches, logs (git-ignored)
 ```
 
 ## Data decisions
@@ -95,6 +121,35 @@ Results: `reports/results/day03_baselines.md`.
   are chosen on validation only.
 
 Results: `reports/results/day04_embeddings.md`, examples: `reports/results/day04_similar_movies.md`.
+
+## Warm-user profiles, retrieval and HNSW (Day 5)
+
+- Profile weights: `graded` (4★ → 1, 5★ → 2) with a recency half-life of 5 liked movies
+  (positions, not days — most users rate in bulk sessions). Chosen on validation: +16% NDCG@10 on test
+  over the Day 4 profile.
+- Stage-1 retrieval is judged by recall@N. Popularity retrieves more relevant movies than embeddings
+  (recall@200 0.36 vs 0.11), but the two top-200 lists overlap only 3.5% → Day 8 uses their union.
+- FAISS HNSW vs exact Flat on real user-profile queries: ~4× lower p95 latency at recall ≈ 0.96.
+
+Results: `reports/results/day05_retrieval.md`, chart `reports/figures/day05_retrieval_flat_vs_hnsw.png`.
+
+## Cold start (Day 6)
+
+- New users give 1–5 onboarding picks and/or free text. Pool = the 20 most-liked movies, re-ranked by
+  cos(profile, movie) + λ·popularity; pool and λ tuned on *pseudo-cold* validation users, never on the
+  cold test users.
+- +5.7% NDCG@10 over popularity with 5 picks (paired bootstrap p = 0.005, 5,000 users never in
+  training). Free text adds no measurable accuracy, so it powers a separate semantic "explore" mode.
+
+Results: `reports/results/day06_coldstart.md`, chart `reports/figures/day06_cold_start_ndcg_vs_seeds.png`.
+
+## Reproducibility (Day 7)
+
+- One frozen split (fingerprinted), one seed (`config.SEED`), settings chosen on validation and read
+  by later days from the earlier days' json (`recsys.experiment.chosen_settings`).
+- Shared script code lives in `src/recsys/experiment.py` (tested); scripts never import each other.
+- The Day 7 refactor was checked by running every script before and after the change on the same data
+  and comparing all result files and per-user metrics: identical (only latency timings differ).
 
 ## Data attribution
 

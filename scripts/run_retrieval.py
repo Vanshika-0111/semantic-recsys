@@ -27,37 +27,32 @@ Usage
 """
 from __future__ import annotations
 
-import os
 import sys
+from pathlib import Path
 
-os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")     # torch/faiss OpenMP clash on Windows
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))   # works without `pip install -e .`
+from recsys.experiment import setup_runtime  # noqa: E402
+
+setup_runtime()          # Windows OpenMP fix; must run before faiss is imported
 
 import argparse  # noqa: E402
 import gc  # noqa: E402
 import json  # noqa: E402
 import time  # noqa: E402
-from pathlib import Path  # noqa: E402
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 from recsys import config  # noqa: E402
 from recsys import split as S  # noqa: E402
 from recsys.ann import (HNSWIndex, faiss_threads, index_size_mb,  # noqa: E402
                         query_latency_ms, recall_vs_exact)
-from recsys.baselines import ItemIndex, PopularityRecommender, user_item_matrix  # noqa: E402
+from recsys.baselines import PopularityRecommender, user_item_matrix  # noqa: E402
 from recsys.candidates import mix_candidates  # noqa: E402
-from recsys.embeddings import (EmbeddingRecommender, FlatIndex, documents_hash,  # noqa: E402
-                               load_embeddings)
+from recsys.embeddings import EmbeddingRecommender, FlatIndex  # noqa: E402
+from recsys.experiment import (COLS, KMAX, SHOW, chosen_settings, eval_users,  # noqa: E402
+                               head_items, load_catalog, load_item_vectors, log, md_table, only,
+                               open_results, read_results, row, save_results, split_fingerprint)
 from recsys.metrics import PAD, beyond_accuracy, evaluate  # noqa: E402
-from recsys.text import build_item_documents, genre_matrix  # noqa: E402
-from run_baselines import eval_users, log, md_table, only, row  # noqa: E402  (Day 7: move to src)
 
 import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
-
-COLS = ["userId", "movieId", "rating"]
-KMAX = max(config.EVAL_KS)
-SHOW = ["ndcg@5", "ndcg@10", "ndcg@20", "recall@10", "precision@10", "mrr@10", "hit_rate@10"]
 
 
 def profile_name(cfg: dict) -> str:
@@ -69,33 +64,19 @@ class Context:
 
     def __init__(self, args, t0: float) -> None:
         self.args, self.t0 = args, t0
-        items = pd.read_parquet(config.PROCESSED_DIR / "items.parquet")
-        self.index = ItemIndex(items["movieId"])
-        self.items = items.set_index("movieId").loc[self.index.ids].reset_index()
-        docs = build_item_documents(self.items)
-        self.genres, _ = genre_matrix(self.items)
-        self.label = dict(zip(self.items["movieId"], self.items["title_clean"] + " (" +
-                              self.items["year"].astype("string").fillna("?") + ")"))
-
-        day4 = config.RESULTS_DIR / "day04_embeddings.json"
-        sel4 = json.loads(day4.read_text()).get("selected", {}) if day4.exists() else {}
-        self.model_key = sel4.get("model", "bge-small")
-        self.center = bool(sel4.get("center", True))
-        self.day4_val_ndcg = None
-        if day4.exists():
-            for r in json.loads(day4.read_text()).get("tuning", {}).get("runs", []):
-                if (r["model"] == self.model_key and r["config"].startswith("centroid")
-                        and ("mean-centered" in r["config"]) == self.center
-                        and r["config"].endswith("history=all")):
-                    self.day4_val_ndcg = r["ndcg@10"]
-        cached = load_embeddings(config.EMB_DIR, self.model_key, self.index.ids, documents_hash(docs))
-        if cached is None:
-            raise SystemExit(f"{self.model_key}: no cached vectors for these documents — "
-                             "run scripts/run_embeddings.py --stages embed first")
-        self.vectors = cached[0]
-        day3 = config.RESULTS_DIR / "day03_baselines.json"
-        self.day3 = json.loads(day3.read_text()) if day3.exists() else {}
-        self.pop_mode = self.day3.get("selected", {}).get("popularity", {}).get("mode", "liked")
+        cat = load_catalog()
+        self.index, self.items, self.genres, self.label = cat.index, cat.items, cat.genres, cat.label
+        chosen = chosen_settings()                  # Day 3 popularity mode, Day 4 encoder
+        self.model_key, self.center = chosen["encoder"], chosen["center"]
+        self.pop_mode = chosen["popularity_mode"]
+        self.day3 = read_results("day03_baselines.json")
+        self.day4_val_ndcg = None                   # Day 4's val score of the same profile
+        for r in read_results("day04_embeddings.json").get("tuning", {}).get("runs", []):
+            if (r["model"] == self.model_key and r["config"].startswith("centroid")
+                    and ("mean-centered" in r["config"]) == self.center
+                    and r["config"].endswith("history=all")):
+                self.day4_val_ndcg = r["ndcg@10"]
+        self.vectors = load_item_vectors(cat, self.model_key)
         self._val = None
         log(f"catalog {len(self.index):,} movies; encoder {self.model_key} "
             f"({'mean-centered' if self.center else 'raw'}), popularity mode={self.pop_mode}", t0)
@@ -112,11 +93,9 @@ class Context:
             val = S.load_view("val", config.SPLIT_DIR, columns=COLS)
             users = eval_users(val, self.args.tune_users, config.SEED)
             pop = PopularityRecommender(self.pop_mode, config.RELEVANCE_THRESHOLD).fit(train, self.index)
-            counts = np.bincount(self.index.cols(train["movieId"].to_numpy()), minlength=len(self.index))
-            head = self.index.ids[np.argsort(-counts, kind="stable")
-                                  [:int(round(config.HEAD_SHARE * len(self.index)))]]
+            head = head_items(train["movieId"].to_numpy(), self.index)
             train_u = only(train, users)
-            del train, counts
+            del train
             gc.collect()
             self._val = {"users": users, "truth": only(val, users), "history": train_u,
                          "seen": user_item_matrix(train_u, users, self.index, dtype=np.int8),
@@ -284,11 +263,9 @@ def stage_test(ctx: Context, results: dict) -> None:
     users = eval_users(test, a.test_users, config.SEED)
     test = only(test, users)
     pop = PopularityRecommender(ctx.pop_mode, config.RELEVANCE_THRESHOLD).fit(train_full, ctx.index)
-    counts = np.bincount(ctx.index.cols(train_full["movieId"].to_numpy()), minlength=len(ctx.index))
-    n_head = int(round(config.HEAD_SHARE * len(ctx.index)))
-    head = ctx.index.ids[np.argsort(-counts, kind="stable")[:n_head]]
+    head = head_items(train_full["movieId"].to_numpy(), ctx.index)
     hist = only(train_full, users)
-    del train_full, counts
+    del train_full
     gc.collect()
     seen = user_item_matrix(hist, users, ctx.index, dtype=np.int8)
     log(f"test: {len(users):,} users (fit on train+val)", ctx.t0)
@@ -492,9 +469,7 @@ def main() -> None:
         args.tune_users, args.test_users = 3000, 5000
         args.ann_queries, args.latency_queries, args.hnsw_m = 300, 200, [16, 32]
     tag = "day05_retrieval_smoke" if args.smoke else "day05_retrieval"
-    config.RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    out_json = config.RESULTS_DIR / f"{tag}.json"
-    results = json.loads(out_json.read_text()) if out_json.exists() else {}
+    out_json, results = open_results(tag)
     t0 = time.time()
     if args.plot_only:
         if "ann" not in results:
@@ -503,8 +478,7 @@ def main() -> None:
         plot_ann(results["ann"], key, config.FIG_DIR / f"{tag}_flat_vs_hnsw.png")
         log(f"redrew reports/figures/{tag}_flat_vs_hnsw.png", t0)
         return
-    results["split_fingerprint"] = json.loads(
-        (config.SPLIT_DIR / S.MANIFEST_FILE).read_text())["fingerprint"]
+    results["split_fingerprint"] = split_fingerprint()
     ctx = Context(args, t0)
     ctx.tag = tag
 
@@ -513,10 +487,10 @@ def main() -> None:
         if stage in args.stages:
             log(f"--- stage {stage} ---", t0)
             fn(ctx, results)
-            out_json.write_text(json.dumps(results, indent=2))       # save after every stage
+            save_results(out_json, results)       # save after every stage
 
     results["seconds_last_run"] = round(time.time() - t0, 1)
-    out_json.write_text(json.dumps(results, indent=2))
+    save_results(out_json, results)
     write_md(results, out_json.with_suffix(".md"), ctx)
     log(f"wrote {out_json.relative_to(config.ROOT)} and .md", t0)
 
