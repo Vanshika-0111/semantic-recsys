@@ -162,7 +162,7 @@
         "long_tail@10": 1e-05,
         "diversity@10": 0.71349,
         "config": "mode=liked",
-        "ms_per_user": 0.16096
+        "ms_per_user": 0.38947
       },
       {
         "model": "tfidf_knn",
@@ -186,7 +186,7 @@
         "long_tail@10": 0.59221,
         "diversity@10": 0.5645,
         "config": "weighting=liked, history=50",
-        "ms_per_user": 0.25975
+        "ms_per_user": 0.64124
       }
     ]
   },
@@ -357,5 +357,5 @@
     ],
     "note": "0 seeds: TF-IDF has no profile and falls back to popularity"
   },
-  "seconds_last_run": 155.7
+  "seconds_last_run": 361.0
 }

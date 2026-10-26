@@ -55,15 +55,15 @@ Overlap of the two top-200 lists: 3.5%.
 
 | top-k | HNSW setting | recall vs exact | p95 ms | speed-up vs Flat |
 |---:|---|---:|---:|---:|
-| 10 | M=64, ef_search=64 | 0.958 | 0.67 | 4.2× |
-| 200 | M=16, ef_search=200 | 0.959 | 1.02 | 2.9× |
+| 10 | M=64, ef_search=64 | 0.958 | 0.84 | 5.1× |
+| 200 | M=16, ef_search=200 | 0.959 | 1.40 | 3.3× |
 
 ## Cold-start request latency (one request, CPU)
 
 | request | p50 ms | p95 ms |
 |---|---:|---:|
-| text (encode + pool + rerank) | 41.7 | 69.2 |
-| 5 seeds (profile + pool + rerank) | 4.5 | 6.5 |
+| text (encode + pool + rerank) | 41.8 | 67.9 |
+| 5 seeds (profile + pool + rerank) | 4.0 | 6.4 |
 
 ## CV bullets — what the numbers support so far
 

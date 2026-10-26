@@ -11466,15 +11466,15 @@
   },
   "latency_ms": {
     "text (encode + pool + rerank)": {
-      "p50": 41.71,
-      "p95": 69.16,
+      "p50": 41.82,
+      "p95": 67.92,
       "n": 200
     },
     "5 seeds (profile + pool + rerank)": {
-      "p50": 4.5,
-      "p95": 6.54,
+      "p50": 4.03,
+      "p95": 6.36,
       "n": 200
     }
   },
-  "seconds_last_run": 47.7
+  "seconds_last_run": 422.0
 }

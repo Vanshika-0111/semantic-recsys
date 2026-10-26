@@ -14,8 +14,8 @@ Split fingerprint `a99079d4a40a…`. Item documents identical to Day 3.
 | model | genre_jaccard@10 | year_gap_median@10 | flat_p50_ms | flat_p95_ms |
 |---|---:|---:|---:|---:|
 | tfidf | 0.3875 | 11 |  |  |
-| minilm | 0.3784 | 10 | 2.3601 | 4.9915 |
-| bge-small | 0.4358 | 10 | 2.8250 | 5.2039 |
+| minilm | 0.3784 | 10 | 2.7111 | 4.6762 |
+| bge-small | 0.4358 | 10 | 2.6243 | 5.9334 |
 
 genre_jaccard = mean genre overlap between a movie and its neighbours (higher = more on-topic); year_gap = median |year difference|. Latency: one top-100 query at a time, 1,000 queries. Examples: `day04_similar_movies.md`.
 

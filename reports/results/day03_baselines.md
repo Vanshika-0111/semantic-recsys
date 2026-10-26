@@ -11,8 +11,8 @@ Split fingerprint `a99079d4a40a…`. Relevant = rating ≥ 4. Already-rated movi
 
 | model | coverage@10 | long_tail@10 | diversity@10 | ms_per_user |
 |---|---:|---:|---:|---:|
-| popularity | 0.0166 | 0.0000 | 0.7135 | 0.1610 |
-| tfidf_knn | 0.6248 | 0.5922 | 0.5645 | 0.2597 |
+| popularity | 0.0166 | 0.0000 | 0.7135 | 0.3895 |
+| tfidf_knn | 0.6248 | 0.5922 | 0.5645 | 0.6412 |
 
 long_tail@10 = share of recommended slots outside the 2,311 most-rated movies; diversity@10 = mean pairwise (1 − cosine) of genre vectors.
 

@@ -46,15 +46,15 @@
         "model": "minilm",
         "genre_jaccard@10": 0.3784374214190519,
         "year_gap_median@10": 10.0,
-        "flat_p50_ms": 2.360149985179305,
-        "flat_p95_ms": 4.991540047922171
+        "flat_p50_ms": 2.711149980314076,
+        "flat_p95_ms": 4.676229960750786
       },
       {
         "model": "bge-small",
         "genre_jaccard@10": 0.43581473616752076,
         "year_gap_median@10": 10.0,
-        "flat_p50_ms": 2.8250000323168933,
-        "flat_p95_ms": 5.203929985873401
+        "flat_p50_ms": 2.624250017106533,
+        "flat_p95_ms": 5.933445063419633
       }
     ],
     "latency_queries": 1000
@@ -486,5 +486,5 @@
     "center": true,
     "max_history": null
   },
-  "seconds_last_run": 379.6
+  "seconds_last_run": 425.1
 }
