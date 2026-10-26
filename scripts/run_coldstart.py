@@ -402,14 +402,22 @@ def stage_examples(ctx: Context, results: dict) -> None:
                                query_prefix=ctx.prefix if sel["query_prefix"] else "",
                                encoder=ctx.encoder())
     md = f"# Day 6 — cold-start examples ({ctx.model_key})\n\n"
-    md += (f"Pool = most-liked movies in the {window_name(W)} before onboarding; ranked by "
-           "cos(profile, movie) + λ·prior. Settings per onboarding type: "
-           f"`{json.dumps(sel['blend'])}`\n\n")
-    md += ("## Free-text onboarding — nothing but a sentence\n\n"
-           f"'Now' = the end of the data ({pd.to_datetime(now, unit='s').date()}), so the pool is "
-           "recent popular movies.\n\n")
+    pool_desc = ("most-liked movies overall" if W == "all-time"
+                 else f"most-liked movies in the {window_name(W)} before onboarding")
+    md += (f"Pool = {pool_desc}; ranked by cos(profile, movie) + λ·prior. "
+           f"Accuracy-tuned settings: `{json.dumps(sel['blend'])}`\n\n")
+    explore = ColdStartRecommender(ctx.raw, ctx.index, prior_at(now), d["fallback"],
+                                   blend={**sel["blend"], "text": dict(config.TEXT_EXPLORE)},
+                                   center=ctx.center, threshold=config.RELEVANCE_THRESHOLD,
+                                   query_prefix=ctx.prefix if sel["query_prefix"] else "",
+                                   encoder=ctx.encoder())
+    md += ("## Free text — explore mode (semantic search, not accuracy-tuned)\n\n"
+           f"The accuracy-tuned text setting is λ = {sel['blend']['text']['lambda']:g} (text added no "
+           "measurable NDCG), which returns the same popular list for every sentence. Explore mode = "
+           f"pool of the {config.TEXT_EXPLORE['pool']:,} most-liked movies ranked by "
+           f"cos(text, movie) + {config.TEXT_EXPLORE['lambda']:g}·prior.\n\n")
     for q in config.DEMO_QUERIES:
-        out = rec.recommend(text=q, k=10)
+        out = explore.recommend(text=q, k=10)
         md += f"**“{q}”** → " + "; ".join(ctx.label[o["movieId"]] for o in out) + "\n\n"
 
     rng = np.random.default_rng(config.SEED + 66)

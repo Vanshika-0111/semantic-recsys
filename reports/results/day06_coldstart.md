@@ -61,8 +61,8 @@ TF-IDF (Day 3, same users and seeds), NDCG@10: 0 seeds 0.0279, 1 seeds 0.0038, 3
 
 | path | p50 ms | p95 ms |
 |---|---:|---:|
-| text (encode + pool + rerank) | 87.95 | 98.12 |
-| 5 seeds (profile + pool + rerank) | 6.56 | 8.17 |
+| text (encode + pool + rerank) | 41.71 | 69.16 |
+| 5 seeds (profile + pool + rerank) | 4.5 | 6.54 |
 
 ## Tuning — pseudo-cold validation (warm val users, first n liked train movies only; fit on train), 10,000 users
 

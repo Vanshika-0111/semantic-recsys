@@ -97,6 +97,11 @@ POOL_SIZES = (20, 30, 50, 75, 100, 200)
 BLEND_WEIGHTS = (0, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0, 5.0, 1000.0)   # 1000 ~ pure time-aware popularity
 ONBOARDING_GENRES = 3     # simulated questionnaire: the 3 most frequent genres of the 5 seeds
 TEXT_SEED_COUNTS = (1, 3, 5)                 # text + n seeds (what the demo's onboarding does)
+# Free text in the demo/API: the accuracy-tuned text setting is pure popularity (λ = 1000 — text
+# added no measurable NDCG), so every sentence would return the same list. "Explore" mode is a
+# semantic SEARCH over well-known movies instead: pool = 1,000 most-liked, ranked mostly by
+# cos(text, movie). A UX feature, not an accuracy claim.
+TEXT_EXPLORE = {"pool": 1000, "lambda": 0.3}
 DEMO_QUERIES = [
     "a mind-bending science fiction film about dreams and memory",
     "heartwarming animated movie about friendship for the whole family",
