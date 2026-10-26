@@ -112,3 +112,18 @@ DEMO_QUERIES = [
     "epic war movie based on a true story",
     "funny superhero movie that doesn't take itself seriously",
 ]
+
+# --- Day 8: stage-1 candidates (union) + leak-free ranker features ---
+# Day 5: a FIXED budget of 200 split between embeddings and popularity always lost recall to
+# popularity alone, but the two lists are almost disjoint (3.5% overlap). So stage 1 is a UNION:
+# popular top-N  ∪  FAISS top-M (Day 5 profile, exact Flat search, seen movies removed).
+# Grid on validation; the ranker (Day 9) gets the selected union. The size cap keeps the ranker's
+# feature matrix small enough for an 8 GB laptop (users x candidates x features, float32).
+CANDIDATE_POP_N = (100, 200, 300, 400, 500)
+CANDIDATE_FAISS_M = (0, 50, 100, 200, 300)
+CANDIDATE_MAX = 500                           # max union size the ranker will score per user
+CANDIDATE_DEFAULT = {"pop": 300, "faiss": 200}   # used if the recall stage was skipped
+RANKER_USERS = 20000                          # val users whose candidate features are written for Day 9
+MAXCOS_HISTORY = 50                           # max-cos feature: the user's last 50 liked movies
+RECENT_DAYS = 365                             # "recent popularity" window before the history cutoff
+AVG_RATING_PRIOR = 20                         # Bayesian average: shrink to the global mean with 20 votes

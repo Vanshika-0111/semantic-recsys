@@ -41,6 +41,7 @@ A step counts as done only if its results file matches the current split *and* i
 | embeddings | `run_embeddings.py` | Day 4: MiniLM vs bge-small + FAISS Flat |
 | retrieval | `run_retrieval.py` | Day 5: warm profiles, candidate recall, Flat vs HNSW |
 | coldstart | `run_coldstart.py` | Day 6: cold-start onboarding (seeds / text) |
+| candidates | `run_candidates.py` | Day 8: stage-1 union (popular ∪ FAISS) + leak-free ranker features |
 | summary | `summarize_results.py` | one page of headline numbers from all days |
 
 Every script also runs on its own and has `--smoke` and `--stages …`.
@@ -49,7 +50,7 @@ Every script also runs on its own and has `--smoke` and `--stages …`.
 
 ```
 src/recsys/      library code: config, data, split, metrics, text, baselines, embeddings, ann,
-                 candidates, coldstart, experiment (shared script plumbing), summary
+                 candidates, features, coldstart, experiment (shared script plumbing), summary
 scripts/         runnable pipeline steps + run_pipeline.py
 tests/           unit tests (expected values hand-computed in comments)
 reports/         EDA summary, figures, results/ (json + markdown per day, summary.md, manifest)
@@ -150,6 +151,23 @@ Results: `reports/results/day06_coldstart.md`, chart `reports/figures/day06_cold
 - Shared script code lives in `src/recsys/experiment.py` (tested); scripts never import each other.
 - The Day 7 refactor was checked by running every script before and after the change on the same data
   and comparing all result files and per-user metrics: identical (only latency timings differ).
+
+## Stage-1 candidates + ranker features (Day 8)
+
+- Stage 1 = popular top-N ∪ FAISS top-M (exact Flat search with the Day 5 profile, already-rated
+  movies removed). Day 5 showed a fixed split of 200 always loses recall to popularity, but the two
+  lists barely overlap, so the union is measured on an N × M grid on validation and the best union
+  with FAISS in it (≤ 500 candidates) goes to the ranker. Popularity-only at the same size is
+  reported next to it — Day 9 tests both end to end.
+- `src/recsys/features.py`: 21 features per (user, candidate) — source ranks, item popularity /
+  Bayesian average rating / recent popularity, static metadata (year, runtime, genres), user
+  activity, and user–item similarity (cos to the recent and long-term profile, max-cos to any of
+  the last 50 liked movies, genre affinity, year and popularity gaps).
+- No leakage: every feature comes from one history table (train to predict val, train+val to
+  predict test). TMDB vote counts / popularity are not used (the dump is from after the ratings).
+  Checks: sorting by `pop_rank` reproduces the popularity baseline exactly; each feature alone is
+  scored as a ranker; the oracle shows the ceiling of the candidate set.
+- Results: `reports/results/day08_candidates.md`; Day 9 input `data/runs/day08_features_val.parquet`.
 
 ## Data attribution
 

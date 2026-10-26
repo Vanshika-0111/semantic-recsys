@@ -10,6 +10,7 @@ All results were computed on the same frozen split ✓
 - `day04_embeddings.json`: split `a99079d4a40a…`
 - `day05_retrieval.json`: split `a99079d4a40a…`
 - `day06_coldstart.json`: split `a99079d4a40a…`
+- `day08_candidates.json`: split `a99079d4a40a…`
 
 ## Warm users — test (fit on train+val, 189,197 users)
 
@@ -51,6 +52,19 @@ Paired bootstrap vs popularity (resampling users):
 
 Overlap of the two top-200 lists: 3.5%.
 
+## Stage-1 candidates for the ranker — test (189,197 users, Day 8)
+
+Popular top-400 ∪ FAISS top-100, chosen on validation (highest val recall with FAISS in the union, size <= 500).
+
+| candidates | recall | hit_rate |
+|---|---:|---:|
+| union: pop 400 + faiss 100 | 0.5188 | 0.8663 |
+| popularity top-500 (same size) | 0.5306 | 0.8565 |
+| popularity top-400 (union without FAISS) | 0.4852 | 0.8284 |
+| FAISS top-100 alone | 0.0682 | 0.2977 |
+
+Ceiling for the ranker on validation (relevant candidates first): NDCG@10 = 0.6181.
+
 ## FAISS Flat vs HNSW — 23,109 × 384 vectors, 1 thread
 
 | top-k | HNSW setting | recall vs exact | p95 ms | speed-up vs Flat |
@@ -68,6 +82,6 @@ Overlap of the two top-200 lists: 3.5%.
 ## CV bullets — what the numbers support so far
 
 1. Cold start: **+5.7% NDCG@10** over popularity with 5 onboarding picks (p = 0.005, 5,000 held-out users). ✓
-2. Two-stage retrieval & ranking: retrieval measured (Day 5); ranker pending (Days 8–9).
+2. Two-stage retrieval & ranking: stage 1 = pop 400 + faiss 100, test recall 0.5188 (popularity alone at the same size: 0.5306); ranker pending (Day 9).
 3. Warm-user NDCG@10 vs popularity: baseline **0.0501**; the final number comes from the Day 10 ranker (a +12% claim would need ≥ 0.0561).
 4. Benchmark: NDCG / Recall / Precision / MRR @5/10/20 vs popularity and TF-IDF — tables above; final table Day 10.

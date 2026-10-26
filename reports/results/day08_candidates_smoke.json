@@ -1,0 +1,661 @@
+{
+  "split_fingerprint": "a99079d4a40ab6808529cf3166bbc02268adc9709f06d24378ee322587988152",
+  "recall": {
+    "split": "val (fit on train)",
+    "n_users": 3000,
+    "max_size": 500,
+    "rows": [
+      {
+        "candidates": "pop 100",
+        "pop": 100,
+        "faiss": 0,
+        "size": 100,
+        "avg_unique": 100.0,
+        "recall": 0.2498,
+        "hit_rate": 0.607,
+        "recall_gain_from_faiss": 0.0,
+        "pop_same_size_recall": 0.2498,
+        "vs_pop_same_size": 0.0
+      },
+      {
+        "candidates": "pop 100 + faiss 50",
+        "pop": 100,
+        "faiss": 50,
+        "size": 150,
+        "avg_unique": 148.6,
+        "recall": 0.2862,
+        "hit_rate": 0.6747,
+        "recall_gain_from_faiss": 0.0364,
+        "pop_same_size_recall": 0.3068,
+        "vs_pop_same_size": -0.0206
+      },
+      {
+        "candidates": "pop 100 + faiss 100",
+        "pop": 100,
+        "faiss": 100,
+        "size": 200,
+        "avg_unique": 197.6,
+        "recall": 0.3039,
+        "hit_rate": 0.7087,
+        "recall_gain_from_faiss": 0.0541,
+        "pop_same_size_recall": 0.3605,
+        "vs_pop_same_size": -0.0567
+      },
+      {
+        "candidates": "pop 100 + faiss 200",
+        "pop": 100,
+        "faiss": 200,
+        "size": 300,
+        "avg_unique": 295.8,
+        "recall": 0.3318,
+        "hit_rate": 0.7453,
+        "recall_gain_from_faiss": 0.082,
+        "pop_same_size_recall": 0.4411,
+        "vs_pop_same_size": -0.1093
+      },
+      {
+        "candidates": "pop 100 + faiss 300",
+        "pop": 100,
+        "faiss": 300,
+        "size": 400,
+        "avg_unique": 394.1,
+        "recall": 0.3524,
+        "hit_rate": 0.7733,
+        "recall_gain_from_faiss": 0.1027,
+        "pop_same_size_recall": 0.5017,
+        "vs_pop_same_size": -0.1492
+      },
+      {
+        "candidates": "pop 200",
+        "pop": 200,
+        "faiss": 0,
+        "size": 200,
+        "avg_unique": 200.0,
+        "recall": 0.3605,
+        "hit_rate": 0.7293,
+        "recall_gain_from_faiss": 0.0,
+        "pop_same_size_recall": 0.3605,
+        "vs_pop_same_size": 0.0
+      },
+      {
+        "candidates": "pop 200 + faiss 50",
+        "pop": 200,
+        "faiss": 50,
+        "size": 250,
+        "avg_unique": 247.6,
+        "recall": 0.3906,
+        "hit_rate": 0.7717,
+        "recall_gain_from_faiss": 0.03,
+        "pop_same_size_recall": 0.4014,
+        "vs_pop_same_size": -0.0108
+      },
+      {
+        "candidates": "pop 200 + faiss 100",
+        "pop": 200,
+        "faiss": 100,
+        "size": 300,
+        "avg_unique": 295.8,
+        "recall": 0.4053,
+        "hit_rate": 0.7963,
+        "recall_gain_from_faiss": 0.0448,
+        "pop_same_size_recall": 0.4411,
+        "vs_pop_same_size": -0.0358
+      },
+      {
+        "candidates": "pop 200 + faiss 200",
+        "pop": 200,
+        "faiss": 200,
+        "size": 400,
+        "avg_unique": 392.6,
+        "recall": 0.4285,
+        "hit_rate": 0.8193,
+        "recall_gain_from_faiss": 0.068,
+        "pop_same_size_recall": 0.5017,
+        "vs_pop_same_size": -0.0732
+      },
+      {
+        "candidates": "pop 200 + faiss 300",
+        "pop": 200,
+        "faiss": 300,
+        "size": 500,
+        "avg_unique": 489.7,
+        "recall": 0.4457,
+        "hit_rate": 0.8353,
+        "recall_gain_from_faiss": 0.0851,
+        "pop_same_size_recall": 0.5491,
+        "vs_pop_same_size": -0.1034
+      },
+      {
+        "candidates": "pop 300",
+        "pop": 300,
+        "faiss": 0,
+        "size": 300,
+        "avg_unique": 300.0,
+        "recall": 0.4411,
+        "hit_rate": 0.7967,
+        "recall_gain_from_faiss": 0.0,
+        "pop_same_size_recall": 0.4411,
+        "vs_pop_same_size": 0.0
+      },
+      {
+        "candidates": "pop 300 + faiss 50",
+        "pop": 300,
+        "faiss": 50,
+        "size": 350,
+        "avg_unique": 346.6,
+        "recall": 0.4671,
+        "hit_rate": 0.827,
+        "recall_gain_from_faiss": 0.026,
+        "pop_same_size_recall": 0.473,
+        "vs_pop_same_size": -0.0059
+      },
+      {
+        "candidates": "pop 300 + faiss 100",
+        "pop": 300,
+        "faiss": 100,
+        "size": 400,
+        "avg_unique": 394.2,
+        "recall": 0.4804,
+        "hit_rate": 0.845,
+        "recall_gain_from_faiss": 0.0393,
+        "pop_same_size_recall": 0.5017,
+        "vs_pop_same_size": -0.0213
+      },
+      {
+        "candidates": "pop 300 + faiss 200",
+        "pop": 300,
+        "faiss": 200,
+        "size": 500,
+        "avg_unique": 489.8,
+        "recall": 0.5014,
+        "hit_rate": 0.8623,
+        "recall_gain_from_faiss": 0.0603,
+        "pop_same_size_recall": 0.5491,
+        "vs_pop_same_size": -0.0477
+      },
+      {
+        "candidates": "pop 300 + faiss 300",
+        "pop": 300,
+        "faiss": 300,
+        "size": 600,
+        "avg_unique": 585.9,
+        "recall": 0.5164,
+        "hit_rate": 0.8757,
+        "recall_gain_from_faiss": 0.0753,
+        "pop_same_size_recall": 0.5902,
+        "vs_pop_same_size": -0.0739
+      },
+      {
+        "candidates": "pop 400",
+        "pop": 400,
+        "faiss": 0,
+        "size": 400,
+        "avg_unique": 400.0,
+        "recall": 0.5017,
+        "hit_rate": 0.8357,
+        "recall_gain_from_faiss": 0.0,
+        "pop_same_size_recall": 0.5017,
+        "vs_pop_same_size": 0.0
+      },
+      {
+        "candidates": "pop 400 + faiss 50",
+        "pop": 400,
+        "faiss": 50,
+        "size": 450,
+        "avg_unique": 445.8,
+        "recall": 0.5252,
+        "hit_rate": 0.8587,
+        "recall_gain_from_faiss": 0.0235,
+        "pop_same_size_recall": 0.5277,
+        "vs_pop_same_size": -0.0025
+      },
+      {
+        "candidates": "pop 400 + faiss 100",
+        "pop": 400,
+        "faiss": 100,
+        "size": 500,
+        "avg_unique": 492.6,
+        "recall": 0.5371,
+        "hit_rate": 0.8727,
+        "recall_gain_from_faiss": 0.0355,
+        "pop_same_size_recall": 0.5491,
+        "vs_pop_same_size": -0.012
+      },
+      {
+        "candidates": "pop 400 + faiss 200",
+        "pop": 400,
+        "faiss": 200,
+        "size": 600,
+        "avg_unique": 587.0,
+        "recall": 0.556,
+        "hit_rate": 0.885,
+        "recall_gain_from_faiss": 0.0543,
+        "pop_same_size_recall": 0.5902,
+        "vs_pop_same_size": -0.0342
+      },
+      {
+        "candidates": "pop 400 + faiss 300",
+        "pop": 400,
+        "faiss": 300,
+        "size": 700,
+        "avg_unique": 682.0,
+        "recall": 0.5689,
+        "hit_rate": 0.896,
+        "recall_gain_from_faiss": 0.0672,
+        "pop_same_size_recall": 0.6255,
+        "vs_pop_same_size": -0.0566
+      },
+      {
+        "candidates": "pop 500",
+        "pop": 500,
+        "faiss": 0,
+        "size": 500,
+        "avg_unique": 500.0,
+        "recall": 0.5491,
+        "hit_rate": 0.8617,
+        "recall_gain_from_faiss": 0.0,
+        "pop_same_size_recall": 0.5491,
+        "vs_pop_same_size": 0.0
+      },
+      {
+        "candidates": "pop 500 + faiss 50",
+        "pop": 500,
+        "faiss": 50,
+        "size": 550,
+        "avg_unique": 545.0,
+        "recall": 0.5706,
+        "hit_rate": 0.881,
+        "recall_gain_from_faiss": 0.0215,
+        "pop_same_size_recall": 0.5709,
+        "vs_pop_same_size": -0.0002
+      },
+      {
+        "candidates": "pop 500 + faiss 100",
+        "pop": 500,
+        "faiss": 100,
+        "size": 600,
+        "avg_unique": 591.2,
+        "recall": 0.5818,
+        "hit_rate": 0.893,
+        "recall_gain_from_faiss": 0.0327,
+        "pop_same_size_recall": 0.5902,
+        "vs_pop_same_size": -0.0085
+      },
+      {
+        "candidates": "pop 500 + faiss 200",
+        "pop": 500,
+        "faiss": 200,
+        "size": 700,
+        "avg_unique": 684.6,
+        "recall": 0.5995,
+        "hit_rate": 0.9033,
+        "recall_gain_from_faiss": 0.0503,
+        "pop_same_size_recall": 0.6255,
+        "vs_pop_same_size": -0.026
+      },
+      {
+        "candidates": "pop 500 + faiss 300",
+        "pop": 500,
+        "faiss": 300,
+        "size": 800,
+        "avg_unique": 778.5,
+        "recall": 0.6112,
+        "hit_rate": 0.9127,
+        "recall_gain_from_faiss": 0.0621,
+        "pop_same_size_recall": 0.6532,
+        "vs_pop_same_size": -0.042
+      }
+    ],
+    "faiss_rows": [
+      {
+        "candidates": "faiss 50",
+        "size": 50,
+        "recall": 0.0491,
+        "hit_rate": 0.2117
+      },
+      {
+        "candidates": "faiss 100",
+        "size": 100,
+        "recall": 0.0725,
+        "hit_rate": 0.296
+      },
+      {
+        "candidates": "faiss 200",
+        "size": 200,
+        "recall": 0.1084,
+        "hit_rate": 0.407
+      },
+      {
+        "candidates": "faiss 300",
+        "size": 300,
+        "recall": 0.1362,
+        "hit_rate": 0.4817
+      }
+    ],
+    "pop_only_best": {
+      "candidates": "pop 500",
+      "pop": 500,
+      "faiss": 0,
+      "size": 500,
+      "avg_unique": 500.0,
+      "recall": 0.5491,
+      "hit_rate": 0.8617,
+      "recall_gain_from_faiss": 0.0,
+      "pop_same_size_recall": 0.5491,
+      "vs_pop_same_size": 0.0
+    },
+    "selected_recall_share_only_faiss": 0.0661
+  },
+  "selected": {
+    "pop": 400,
+    "faiss": 100,
+    "val_recall": 0.5371,
+    "rule": "highest val recall with FAISS in the union, size <= 500"
+  },
+  "features": {
+    "split": "history = train, labels = val",
+    "n_users": 2000,
+    "candidates": {
+      "pop": 400,
+      "faiss": 100
+    },
+    "rows": 985100,
+    "relevant_rows": 6695,
+    "avg_candidates": 492.6,
+    "ms_per_user": 2.24,
+    "file": "data\\runs\\day08_features_val_smoke.parquet",
+    "file_mb": 29.8,
+    "pop_rank_reproduces_popularity": 1.0,
+    "one_feature": [
+      {
+        "feature": "(oracle)",
+        "ndcg@10": 0.6264,
+        "recall@10": 0.545,
+        "mrr@10": 0.87
+      },
+      {
+        "feature": "in_pop",
+        "ndcg@10": 0.0483,
+        "recall@10": 0.0541,
+        "mrr@10": 0.0924
+      },
+      {
+        "feature": "pop_rank",
+        "ndcg@10": 0.0483,
+        "recall@10": 0.0541,
+        "mrr@10": 0.0924
+      },
+      {
+        "feature": "item_liked_log",
+        "ndcg@10": 0.0483,
+        "recall@10": 0.0541,
+        "mrr@10": 0.0924
+      },
+      {
+        "feature": "(union order)",
+        "ndcg@10": 0.0483,
+        "recall@10": 0.0541,
+        "mrr@10": 0.0924
+      },
+      {
+        "feature": "item_count_log",
+        "ndcg@10": 0.0479,
+        "recall@10": 0.0537,
+        "mrr@10": 0.0918
+      },
+      {
+        "feature": "in_faiss",
+        "ndcg@10": 0.0381,
+        "recall@10": 0.0381,
+        "mrr@10": 0.0908
+      },
+      {
+        "feature": "item_recent_log",
+        "ndcg@10": 0.0368,
+        "recall@10": 0.0397,
+        "mrr@10": 0.0757
+      },
+      {
+        "feature": "year_gap",
+        "ndcg@10": 0.0309,
+        "recall@10": 0.0335,
+        "mrr@10": 0.0671
+      },
+      {
+        "feature": "item_avg_rating",
+        "ndcg@10": 0.0287,
+        "recall@10": 0.0305,
+        "mrr@10": 0.0658
+      },
+      {
+        "feature": "max_cos_liked",
+        "ndcg@10": 0.0256,
+        "recall@10": 0.0273,
+        "mrr@10": 0.0566
+      },
+      {
+        "feature": "item_liked_share",
+        "ndcg@10": 0.0245,
+        "recall@10": 0.0264,
+        "mrr@10": 0.0559
+      },
+      {
+        "feature": "cos_longterm",
+        "ndcg@10": 0.0166,
+        "recall@10": 0.0183,
+        "mrr@10": 0.0381
+      },
+      {
+        "feature": "genre_affinity",
+        "ndcg@10": 0.0157,
+        "recall@10": 0.0168,
+        "mrr@10": 0.0364
+      },
+      {
+        "feature": "faiss_rank",
+        "ndcg@10": 0.015,
+        "recall@10": 0.0159,
+        "mrr@10": 0.0333
+      },
+      {
+        "feature": "cos_profile",
+        "ndcg@10": 0.015,
+        "recall@10": 0.0159,
+        "mrr@10": 0.0333
+      },
+      {
+        "feature": "item_year",
+        "ndcg@10": 0.0017,
+        "recall@10": 0.002,
+        "mrr@10": 0.0031
+      },
+      {
+        "feature": "item_trend",
+        "ndcg@10": 0.0015,
+        "recall@10": 0.0025,
+        "mrr@10": 0.0021
+      }
+    ],
+    "stats": [
+      {
+        "feature": "in_pop",
+        "mean_relevant": 0.9428,
+        "mean_other": 0.8112,
+        "missing_share": 0.0,
+        "meaning": "retrieved by the popularity source (1/0)"
+      },
+      {
+        "feature": "pop_rank",
+        "mean_relevant": 128.8706,
+        "mean_other": 200.0617,
+        "missing_share": 0.1879,
+        "meaning": "position in the user's popularity list (NaN = not retrieved by it)"
+      },
+      {
+        "feature": "in_faiss",
+        "mean_relevant": 0.1207,
+        "mean_other": 0.2033,
+        "missing_share": 0.0,
+        "meaning": "retrieved by FAISS (1/0)"
+      },
+      {
+        "feature": "faiss_rank",
+        "mean_relevant": 38.1052,
+        "mean_other": 49.5463,
+        "missing_share": 0.7973,
+        "meaning": "position in the user's FAISS list (NaN = not retrieved by it)"
+      },
+      {
+        "feature": "item_liked_log",
+        "mean_relevant": 9.6099,
+        "mean_other": 8.4866,
+        "missing_share": 0.0,
+        "meaning": "log(1 + #ratings >= 4) in the history"
+      },
+      {
+        "feature": "item_count_log",
+        "mean_relevant": 10.1085,
+        "mean_other": 9.1562,
+        "missing_share": 0.0,
+        "meaning": "log(1 + #ratings) in the history"
+      },
+      {
+        "feature": "item_avg_rating",
+        "mean_relevant": 3.8324,
+        "mean_other": 3.6727,
+        "missing_share": 0.0,
+        "meaning": "Bayesian average rating (20 pseudo-votes at the global mean)"
+      },
+      {
+        "feature": "item_liked_share",
+        "mean_relevant": 0.6246,
+        "mean_other": 0.5543,
+        "missing_share": 0.0,
+        "meaning": "#ratings >= 4 / #ratings (smoothed like the average)"
+      },
+      {
+        "feature": "item_recent_log",
+        "mean_relevant": 5.7115,
+        "mean_other": 4.7124,
+        "missing_share": 0.0,
+        "meaning": "log(1 + #ratings >= 4 in the last 365 days of the history)"
+      },
+      {
+        "feature": "item_trend",
+        "mean_relevant": 0.026,
+        "mean_other": 0.0307,
+        "missing_share": 0.0,
+        "meaning": "share of the movie's liked ratings that fall in those 365 days"
+      },
+      {
+        "feature": "item_year",
+        "mean_relevant": 1994.6109,
+        "mean_other": 1994.4443,
+        "missing_share": 0.001,
+        "meaning": "release year (newer first in the one-feature check)"
+      },
+      {
+        "feature": "item_runtime",
+        "mean_relevant": 123.3652,
+        "mean_other": 118.5411,
+        "missing_share": 0.0001,
+        "meaning": "runtime in minutes (TMDB; NaN if missing)"
+      },
+      {
+        "feature": "user_n_ratings_log",
+        "mean_relevant": 4.0303,
+        "mean_other": 4.3215,
+        "missing_share": 0.0,
+        "meaning": "log(1 + #ratings of the user)"
+      },
+      {
+        "feature": "user_mean_rating",
+        "mean_relevant": 3.8615,
+        "mean_other": 3.727,
+        "missing_share": 0.0,
+        "meaning": "the user's mean rating"
+      },
+      {
+        "feature": "user_liked_share",
+        "mean_relevant": 0.6482,
+        "mean_other": 0.589,
+        "missing_share": 0.0,
+        "meaning": "share of the user's ratings that are >= 4"
+      },
+      {
+        "feature": "cos_profile",
+        "mean_relevant": 0.1376,
+        "mean_other": 0.1024,
+        "missing_share": 0.0012,
+        "meaning": "cos(Day 5 profile = graded, half-life 5, mean-centered; movie)"
+      },
+      {
+        "feature": "cos_longterm",
+        "mean_relevant": 0.1567,
+        "mean_other": 0.1085,
+        "missing_share": 0.0012,
+        "meaning": "cos(all liked movies, no decay; movie) \u2014 long-term taste"
+      },
+      {
+        "feature": "max_cos_liked",
+        "mean_relevant": 0.2755,
+        "mean_other": 0.2447,
+        "missing_share": 0.0012,
+        "meaning": "max cos between the movie and any of the user's last 50 liked"
+      },
+      {
+        "feature": "genre_affinity",
+        "mean_relevant": 0.3111,
+        "mean_other": 0.2819,
+        "missing_share": 0.0,
+        "meaning": "\u03a3_g (share of the user's liked movies in g) over the movie's genres, / #genres"
+      },
+      {
+        "feature": "year_gap",
+        "mean_relevant": 8.9285,
+        "mean_other": 13.9757,
+        "missing_share": 0.0022,
+        "meaning": "|release year - mean year of the user's liked movies|"
+      },
+      {
+        "feature": "pop_gap",
+        "mean_relevant": 0.4365,
+        "mean_other": -0.489,
+        "missing_share": 0.0012,
+        "meaning": "item_liked_log - mean item_liked_log of the user's liked movies"
+      }
+    ]
+  },
+  "test": {
+    "split": "test (fit on train+val)",
+    "n_users": 5000,
+    "candidates": {
+      "pop": 400,
+      "faiss": 100
+    },
+    "rows": [
+      {
+        "candidates": "union: pop 400 + faiss 100",
+        "recall": 0.5216,
+        "hit_rate": 0.8678
+      },
+      {
+        "candidates": "popularity top-500 (same size)",
+        "recall": 0.5355,
+        "hit_rate": 0.8598
+      },
+      {
+        "candidates": "popularity top-400 (union without FAISS)",
+        "recall": 0.4871,
+        "hit_rate": 0.828
+      },
+      {
+        "candidates": "FAISS top-100 alone",
+        "recall": 0.0696,
+        "hit_rate": 0.302
+      }
+    ],
+    "ms_per_user_retrieval": 1.16
+  },
+  "seconds_last_run": 51.1
+}

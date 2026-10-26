@@ -1,6 +1,7 @@
 """Day 7: the whole project in ONE command, in the right order, reproducibly.
 
-    download -> prepare -> eda -> split -> baselines -> embeddings -> retrieval -> coldstart -> summary
+    download -> prepare -> eda -> split -> baselines -> embeddings -> retrieval -> coldstart
+      -> candidates -> summary
 
 Each step is the existing script (nothing is re-implemented here). A step whose outputs already
 exist is SKIPPED, so a second run costs seconds — except the split, which is never rebuilt: if it
@@ -110,6 +111,10 @@ STEPS = [
     Step("coldstart", "run_coldstart.py",
          has_results("day06_coldstart", ("test",), ("runs/day06_coldstart_cold_per_user.parquet",)),
          smoke_flag=True, what="Day 6: cold-start onboarding"),
+    Step("candidates", "run_candidates.py",
+         has_results("day08_candidates", ("selected", "features", "test"),
+                     ("runs/day08_features_val.parquet",)),
+         smoke_flag=True, what="Day 8: popular ∪ FAISS candidates + ranker features"),
 ]
 NAMES = [s.name for s in STEPS]
 

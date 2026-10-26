@@ -20,6 +20,7 @@ FILES = {
     "day04": "day04_embeddings.json",
     "day05": "day05_retrieval.json",
     "day06": "day06_coldstart.json",
+    "day08": "day08_candidates.json",
 }
 WARM_COLS = ["model", "config", "ndcg@5", "ndcg@10", "ndcg@20", "recall@10", "precision@10",
              "mrr@10", "coverage@10", "long_tail@10"]
@@ -115,6 +116,21 @@ def build_summary(results_dir: Path | None = None) -> str:
             md += f"\nOverlap of the two top-200 lists: {100 * cand['overlap@200']:.1f}%.\n"
         md += "\n"
 
+    d8 = res.get("day08", {})
+    if d8.get("test", {}).get("rows"):
+        t, sel = d8["test"], d8.get("selected", {})
+        md += (f"## Stage-1 candidates for the ranker — test ({t['n_users']:,} users, Day 8)\n\n"
+               f"Popular top-{t['candidates']['pop']} ∪ FAISS top-{t['candidates']['faiss']}, chosen on "
+               f"validation ({sel.get('rule', '')}).\n\n")
+        md += md_table(t["rows"], ["candidates", "recall", "hit_rate"], left=("candidates",))
+        f = d8.get("features", {})
+        if f.get("one_feature"):
+            orc = next((r["ndcg@10"] for r in f["one_feature"] if r["feature"] == "(oracle)"), None)
+            if orc is not None:
+                md += (f"\nCeiling for the ranker on validation (relevant candidates first): "
+                       f"NDCG@10 = {orc:.4f}.\n")
+        md += "\n"
+
     ann = res["day05"].get("ann", {})
     if ann.get("recommended"):
         md += (f"## FAISS Flat vs HNSW — {ann['n_items']:,} × {ann['dim']} vectors, "
@@ -149,7 +165,15 @@ def cv_status(res: dict[str, dict]) -> str:
                f"{res['day06']['test'].get('n_users', 0):,} held-out users). ✓\n")
     else:
         md += "1. Cold start: no significant gain over popularity yet.\n"
-    md += "2. Two-stage retrieval & ranking: retrieval measured (Day 5); ranker pending (Days 8–9).\n"
+    t8 = res.get("day08", {}).get("test", {})
+    if t8.get("rows"):
+        u = t8["rows"][0]
+        same = next((r for r in t8["rows"] if "same size" in r["candidates"]), None)
+        md += (f"2. Two-stage retrieval & ranking: stage 1 = {u['candidates'].split(': ')[-1]}, test recall "
+               f"{u['recall']:.4f}" + (f" (popularity alone at the same size: {same['recall']:.4f})"
+                                        if same else "") + "; ranker pending (Day 9).\n")
+    else:
+        md += "2. Two-stage retrieval & ranking: retrieval measured (Day 5); ranker pending (Days 8–9).\n"
     pop = next((r["ndcg@10"] for r in res["day03"].get("test", {}).get("rows", [])
                 if r["model"] == "popularity"), None)
     if pop:
