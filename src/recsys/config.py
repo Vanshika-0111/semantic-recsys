@@ -79,3 +79,31 @@ HNSW_EF_SEARCH = (16, 32, 64, 128, 256, 512)  # query-time candidate list (FAISS
 ANN_KS = (10, 200)                            # top-10 (a recommendation list), top-200 (candidates)
 ANN_QUERIES = 2000                            # real user-profile queries from validation users
 ANN_TARGET_RECALL = 0.95                      # "good enough" operating point for the API
+
+# --- Day 6: cold start (onboarding seeds and/or a preference text) ---
+# Model (recsys.coldstart): pool = M most popular movies at the onboarding moment (liked ratings in
+# the last W days before it), then rank the pool by cos(profile, movie) + λ · that prior.
+# W, M, λ are tuned on PSEUDO-cold validation users (warm val users shown only their first n liked
+# TRAIN movies). Smoke run 1 (whole catalog, all-time prior) collapsed to popularity -> pool + time.
+COLD_TUNE_USERS = 10000                      # pseudo-cold validation users (seeded sample)
+TIME_BUCKET_DAYS = 14
+# Prior: "all-time" = log liked count over ALL training ratings (same ranking as the popularity
+# baseline); a number = liked in the last W days before onboarding; None = everything before it.
+# Smoke run 2: no window beat all-time (MovieLens users rate the back catalog, not new releases).
+TIME_WINDOWS_DAYS = ("all-time", 30, 180, 730, None)
+# Smoke run 2: the smallest pool (50) always won -> smaller pools added. Whole catalog (None) is
+# only evaluated as the 'embeddings only' ablation (it lost 3-6x in both smoke runs).
+POOL_SIZES = (20, 30, 50, 75, 100, 200)
+BLEND_WEIGHTS = (0, 0.1, 0.2, 0.3, 0.5, 1.0, 2.0, 5.0, 1000.0)   # 1000 ~ pure time-aware popularity
+ONBOARDING_GENRES = 3     # simulated questionnaire: the 3 most frequent genres of the 5 seeds
+TEXT_SEED_COUNTS = (1, 3, 5)                 # text + n seeds (what the demo's onboarding does)
+DEMO_QUERIES = [
+    "a mind-bending science fiction film about dreams and memory",
+    "heartwarming animated movie about friendship for the whole family",
+    "slow, sad drama about grief and losing a parent",
+    "gritty crime thriller with a heist that goes wrong",
+    "feel-good romantic comedy set in New York",
+    "scary folk horror in an isolated village",
+    "epic war movie based on a true story",
+    "funny superhero movie that doesn't take itself seriously",
+]

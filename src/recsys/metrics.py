@@ -254,3 +254,26 @@ def evaluate(users: np.ndarray, recs: np.ndarray, truth: pd.DataFrame,
     if return_per_user:
         return out, pd.DataFrame(per_user)
     return out
+
+
+def paired_bootstrap(a: np.ndarray, b: np.ndarray, n_boot: int = 2000, seed: int = 42,
+                     chunk: int = 200) -> dict:
+    """Is model A better than model B on the SAME users? (Day 6+)
+
+    a, b : per-user metric values in the same user order. Resample USERS with replacement
+    n_boot times and recompute mean(a - b): the 2.5 / 97.5 percentiles give a 95% CI.
+    p_le_0 = share of resamples where A is not better (a one-sided bootstrap p-value).
+    Paired = each user is compared with themselves, which removes the huge between-user spread."""
+    d = np.asarray(a, np.float64) - np.asarray(b, np.float64)
+    if d.shape != np.shape(b) or d.ndim != 1 or d.size == 0:
+        raise ValueError("a and b must be equal-length 1-d arrays")
+    rng = np.random.default_rng(seed)
+    means = np.empty(n_boot)
+    for s in range(0, n_boot, chunk):
+        e = min(s + chunk, n_boot)
+        means[s:e] = d[rng.integers(0, d.size, size=(e - s, d.size))].mean(axis=1)
+    lo, hi = np.percentile(means, [2.5, 97.5])
+    mb = float(np.mean(b))
+    return {"mean_a": float(np.mean(a)), "mean_b": mb, "diff": float(d.mean()),
+            "ci95": [float(lo), float(hi)], "p_le_0": float((means <= 0).mean()),
+            "rel_change": float(d.mean() / mb) if mb else float("nan")}

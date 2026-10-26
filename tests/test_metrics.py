@@ -155,3 +155,15 @@ def test_beyond_accuracy_matches_reference():
     assert out["coverage@10"] == pytest.approx(catalog_coverage(lists, 50, 10))
     assert out["long_tail@10"] == pytest.approx(long_tail_share(lists, set(head.tolist()), 10))
     assert out["diversity@10"] == pytest.approx(mean_intra_list_diversity(lists, vecs, index, 10))
+
+
+def test_paired_bootstrap_by_hand():
+    from recsys.metrics import paired_bootstrap
+    # every user gains exactly 0.1 -> every resample has mean diff 0.1 -> CI [0.1, 0.1], p = 0
+    r = paired_bootstrap(np.array([0.3, 0.2, 0.1]), np.array([0.2, 0.1, 0.0]), n_boot=200)
+    assert r["diff"] == pytest.approx(0.1) and r["p_le_0"] == 0.0
+    assert r["ci95"] == pytest.approx([0.1, 0.1])
+    assert r["rel_change"] == pytest.approx(0.1 / 0.1)        # mean_b = 0.1 -> +100%
+    # A never better: one user loses, one ties -> every resample mean <= 0 -> p = 1
+    r = paired_bootstrap(np.array([0.0, 0.5]), np.array([0.2, 0.5]), n_boot=200)
+    assert r["p_le_0"] == 1.0 and r["ci95"][1] <= 0
