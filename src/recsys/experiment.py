@@ -7,6 +7,7 @@ tests/test_experiment.py, and every script uses the same definitions:
   setup_runtime()        environment fixes that must run before torch / faiss are imported
   log(msg, t0)           timestamped progress line
   eval_users / only      which users get scored; filter a ratings frame to those users
+  rows_of                fast `only` for a batch of consecutive sorted users
   head_items             the 10% most-rated movies (the "head" for the long-tail metric)
   load_catalog           items in index order + item documents + genres + readable labels
   load_item_vectors      cached sentence-embedding vectors (clear error if missing or stale)
@@ -78,6 +79,14 @@ def eval_users(truth: pd.DataFrame, limit: int | None, seed: int) -> np.ndarray:
 def only(df: pd.DataFrame, users: np.ndarray) -> pd.DataFrame:
     """Rows of `df` that belong to `users`."""
     return df[np.isin(df["userId"].to_numpy(), users)]
+
+
+def rows_of(df: pd.DataFrame, users_sorted: np.ndarray) -> pd.DataFrame:
+    """Rows of `df` (sorted by userId) for a contiguous run of sorted users — a fast `only()`
+    for batches, valid when df holds only users from the same sorted list (Day 8; shared Day 9)."""
+    uid = df["userId"].to_numpy()
+    a, b = np.searchsorted(uid, users_sorted[0]), np.searchsorted(uid, users_sorted[-1], side="right")
+    return df.iloc[a:b]
 
 
 def head_items(movie_ids: np.ndarray, index, share: float = config.HEAD_SHARE) -> np.ndarray:

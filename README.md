@@ -42,6 +42,7 @@ A step counts as done only if its results file matches the current split *and* i
 | retrieval | `run_retrieval.py` | Day 5: warm profiles, candidate recall, Flat vs HNSW |
 | coldstart | `run_coldstart.py` | Day 6: cold-start onboarding (seeds / text) |
 | candidates | `run_candidates.py` | Day 8: stage-1 union (popular ∪ FAISS) + leak-free ranker features |
+| ranker | `run_ranker.py` | Day 9: LightGBM LambdaMART ranker on validation (+ cold mode) |
 | summary | `summarize_results.py` | one page of headline numbers from all days |
 
 Every script also runs on its own and has `--smoke` and `--stages …`.
@@ -50,7 +51,7 @@ Every script also runs on its own and has `--smoke` and `--stages …`.
 
 ```
 src/recsys/      library code: config, data, split, metrics, text, baselines, embeddings, ann,
-                 candidates, features, coldstart, experiment (shared script plumbing), summary
+                 candidates, features, ranker, coldstart, experiment (shared script plumbing), summary
 scripts/         runnable pipeline steps + run_pipeline.py
 tests/           unit tests (expected values hand-computed in comments)
 reports/         EDA summary, figures, results/ (json + markdown per day, summary.md, manifest)
@@ -168,6 +169,23 @@ Results: `reports/results/day06_coldstart.md`, chart `reports/figures/day06_cold
   Checks: sorting by `pop_rank` reproduces the popularity baseline exactly; each feature alone is
   scored as a ranker; the oracle shows the ceiling of the candidate set.
 - Results: `reports/results/day08_candidates.md`; Day 9 input `data/runs/day08_features_val.parquet`.
+
+## Stage-2 ranker (Day 9)
+
+- `src/recsys/ranker.py`: LightGBM LambdaMART (`objective=lambdarank`) — trees whose gradients come
+  from how much swapping two movies changes NDCG. One query = one user's candidate list.
+- Labels from the val window (features from train): binary (rating ≥ 4) or graded (4★/4.5★/5★ with
+  gains 1/1.5/2 = the project's graded NDCG). The 20k feature users are split once by user into
+  ranker-train (75%) / ranker-valid (25%); early stopping and every choice use ranker-valid only.
+- The Day 8 open question is settled end to end: the ranker is trained on **both** candidate sets —
+  the union (popular 400 ∪ FAISS 100) and popular-500 with FAISS kept only as a feature — and the
+  better val NDCG@10 wins. Metrics count every relevant val movie, including those stage 1 missed.
+- `TwoStage` = the serving path (history → candidates → features → scores → top-k) used by Day 10
+  and the API; a check confirms it rebuilds the Day 8 training features identically.
+- Cold mode: the same features for pseudo-cold users (only their first 1/3/5 liked movies), compared
+  with popularity, the Day 6 semantic rerank and the warm ranker applied as is.
+- Results: `reports/results/day09_ranker.md`, chart `reports/figures/day09_ranker_val.png`;
+  models `data/runs/day09_ranker.txt`, `data/runs/day09_cold_ranker.txt` (git-ignored).
 
 ## Data attribution
 

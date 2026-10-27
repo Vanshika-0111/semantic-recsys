@@ -164,7 +164,7 @@ def test_pipeline_plan(monkeypatch):
     plan = {s.name: a for s, a in P.plan(Args(force=True))}
     assert plan["baselines"] == "run" and plan["split"] == "verify"
     # --from starts in the middle
-    assert [s.name for s, _ in P.plan(Args(from_step="retrieval"))] == ["retrieval", "coldstart", "candidates"]
+    assert [s.name for s, _ in P.plan(Args(from_step="retrieval"))] == ["retrieval", "coldstart", "candidates", "ranker"]
     # --smoke never downloads data: a missing data step is reported, not run
     done.discard("prepare")
     plan = {s.name: a for s, a in P.plan(Args(smoke=True))}
@@ -172,7 +172,7 @@ def test_pipeline_plan(monkeypatch):
 
 
 @pytest.mark.parametrize("name", ["run_baselines", "run_embeddings", "run_retrieval",
-                                  "run_coldstart", "run_candidates", "summarize_results",
+                                  "run_coldstart", "run_candidates", "run_ranker", "summarize_results",
                                   "run_pipeline"])
 def test_scripts_do_not_import_other_scripts(name):
     """Day 7 rule: shared code lives in src/recsys, scripts never import each other."""

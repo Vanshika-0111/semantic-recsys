@@ -52,22 +52,14 @@ from recsys.baselines import PopularityRecommender, user_item_matrix  # noqa: E4
 from recsys.candidates import faiss_candidates, union_candidates  # noqa: E402
 from recsys.embeddings import EmbeddingRecommender, FlatIndex  # noqa: E402
 from recsys.experiment import (COLS, TCOLS, chosen_settings, eval_users, load_catalog,  # noqa: E402
-                               load_item_vectors, log, md_table, only, open_results, save_results,
-                               split_fingerprint)
+                               load_item_vectors, log, md_table, only, open_results, rows_of,
+                               save_results, split_fingerprint)
 from recsys.features import (FEATURE_NAMES, FEATURES, FeatureBuilder,  # noqa: E402
                              assert_no_label_in_history, attach_labels, oracle_topk,
                              rank_by_feature)
 from recsys.metrics import PAD, evaluate  # noqa: E402
 
 FEATURES_FILE = "day08_features_val.parquet"
-
-
-def rows_of(df: pd.DataFrame, users_sorted: np.ndarray) -> pd.DataFrame:
-    """Rows of `df` (sorted by userId) for a contiguous run of sorted users — a fast `only()`
-    for batches, valid because df holds only users from the same sorted list."""
-    uid = df["userId"].to_numpy()
-    a, b = np.searchsorted(uid, users_sorted[0]), np.searchsorted(uid, users_sorted[-1], side="right")
-    return df.iloc[a:b]
 
 
 class Context:

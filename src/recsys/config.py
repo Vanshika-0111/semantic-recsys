@@ -127,3 +127,20 @@ RANKER_USERS = 20000                          # val users whose candidate featur
 MAXCOS_HISTORY = 50                           # max-cos feature: the user's last 50 liked movies
 RECENT_DAYS = 365                             # "recent popularity" window before the history cutoff
 AVG_RATING_PRIOR = 20                         # Bayesian average: shrink to the global mean with 20 votes
+
+# --- Day 9: LightGBM LambdaMART ranker (stage 2) ---
+# Trained on the Day 8 feature table (20k val users: history = train, labels = val), split ONCE by
+# user into ranker-train / ranker-valid. Every choice below is made on ranker-valid, never on test.
+RANKER_VALID_SHARE = 0.25                    # 15k users fit the trees, 5k choose / early-stop them
+RANKER_POP_ONLY = 500                        # variant 2: popular top-500, FAISS only as a FEATURE
+# Grid: label scheme x tree size (the two choices that usually matter most for LambdaMART);
+# the rest stays at robust defaults. Picked by binary NDCG@10 on ranker-valid (the CV metric).
+RANKER_GRID = [{"labels": lab, "num_leaves": nl} for lab in ("binary", "graded") for nl in (31, 127)]
+RANKER_BASE = {"learning_rate": 0.1, "min_data_in_leaf": 200, "feature_fraction": 0.8,
+               "lambda_l2": 1.0, "truncation_level": 30}
+RANKER_MAX_ROUNDS = 1000
+RANKER_EARLY_STOP = 50                       # stop when valid NDCG@10 hasn't improved for 50 rounds
+# Cold mode (Day 6 note): the same features for PSEUDO-cold users (warm val users who show only
+# their first n liked train movies), n drawn from these per training user; evaluated at each n.
+COLD_RANKER_USERS = 20000
+COLD_RANKER_SEEDS = (1, 3, 5)

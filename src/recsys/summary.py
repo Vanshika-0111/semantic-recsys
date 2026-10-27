@@ -21,6 +21,7 @@ FILES = {
     "day05": "day05_retrieval.json",
     "day06": "day06_coldstart.json",
     "day08": "day08_candidates.json",
+    "day09": "day09_ranker.json",
 }
 WARM_COLS = ["model", "config", "ndcg@5", "ndcg@10", "ndcg@20", "recall@10", "precision@10",
              "mrr@10", "coverage@10", "long_tail@10"]
@@ -131,6 +132,8 @@ def build_summary(results_dir: Path | None = None) -> str:
                        f"NDCG@10 = {orc:.4f}.\n")
         md += "\n"
 
+    md += ranker_section(res)
+
     ann = res["day05"].get("ann", {})
     if ann.get("recommended"):
         md += (f"## FAISS Flat vs HNSW — {ann['n_items']:,} × {ann['dim']} vectors, "
@@ -152,6 +155,45 @@ def build_summary(results_dir: Path | None = None) -> str:
     return md
 
 
+def ranker_section(res: dict[str, dict]) -> str:
+    """Day 9: ranker vs popularity on ranker-valid users (validation; test is Day 10)."""
+    t = res.get("day09", {}).get("train", {})
+    if not t.get("rows"):
+        return ""
+    sel = res["day09"].get("selected", {})
+    md = (f"## Stage 2: LightGBM ranker — validation ({t['n_valid_users']:,} ranker-valid users, Day 9)\n\n"
+          f"Selected: {sel.get('label', '')}, {sel.get('config', {}).get('labels', '')} labels, "
+          f"{sel.get('config', {}).get('num_leaves', '')} leaves, {sel.get('best_iter', '')} trees. "
+          "Test numbers come on Day 10.\n\n")
+    md += md_table(t["rows"], ["model", "config", "ndcg@5", "ndcg@10", "ndcg@20", "recall@10", "mrr@10"])
+    sig = [{"model": s["model"], "vs": s["vs"], "change": f"{100 * s['rel_change']:+.1f}%",
+            "95% CI of diff": f"[{s['ci95'][0]:+.4f}, {s['ci95'][1]:+.4f}]", "p(≤0)": s["p_le_0"]}
+           for s in t.get("significance", [])]
+    if sig:
+        md += "\n" + md_table(sig, ["model", "vs", "change", "95% CI of diff", "p(≤0)"], left=("model", "vs"))
+    c = res["day09"].get("cold", {})
+    if c.get("rows"):
+        md += f"\nCold mode (pseudo-cold validation, {c['n_valid_users']:,} users), NDCG@10:\n\n"
+        models = list(dict.fromkeys(r["model"] for r in c["rows"]))
+        table = []
+        for n in sorted({r["seeds"] for r in c["rows"]}):
+            line = {"seeds": n}
+            for r in c["rows"]:
+                if r["seeds"] == n:
+                    line[r["model"]] = r["ndcg@10"]
+            table.append(line)
+        md += md_table(table, ["seeds"] + models)
+    return md + "\n"
+
+
+def ranker_status(res: dict[str, dict]) -> str:
+    sel = res.get("day09", {}).get("selected", {})
+    if not sel:
+        return "ranker pending (Day 9)."
+    return (f"ranker ✓ (Day 9, validation): {sel['label']} chosen end to end; "
+            f"test on Day 10.")
+
+
 def cv_status(res: dict[str, dict]) -> str:
     """What the numbers support so far, per CV bullet (facts only, no rounding up)."""
     md = "## CV bullets — what the numbers support so far\n\n"
@@ -171,14 +213,19 @@ def cv_status(res: dict[str, dict]) -> str:
         same = next((r for r in t8["rows"] if "same size" in r["candidates"]), None)
         md += (f"2. Two-stage retrieval & ranking: stage 1 = {u['candidates'].split(': ')[-1]}, test recall "
                f"{u['recall']:.4f}" + (f" (popularity alone at the same size: {same['recall']:.4f})"
-                                        if same else "") + "; ranker pending (Day 9).\n")
+                                        if same else "") + "; " + ranker_status(res) + "\n")
     else:
         md += "2. Two-stage retrieval & ranking: retrieval measured (Day 5); ranker pending (Days 8–9).\n"
     pop = next((r["ndcg@10"] for r in res["day03"].get("test", {}).get("rows", [])
                 if r["model"] == "popularity"), None)
     if pop:
-        md += (f"3. Warm-user NDCG@10 vs popularity: baseline **{pop:.4f}**; the final number comes "
-               f"from the Day 10 ranker (a +12% claim would need ≥ {1.12 * pop:.4f}).\n")
+        sel = res.get("day09", {}).get("selected", {})
+        val = (f" Day 9 validation: ranker {sel['val_ndcg@10']:.4f} vs popularity "
+               f"{res['day09']['train']['rows'][0]['ndcg@10']:.4f} on the same users "
+               f"({100 * (sel['val_ndcg@10'] / res['day09']['train']['rows'][0]['ndcg@10'] - 1):+.1f}%)."
+               if sel and res["day09"].get("train") else "")
+        md += (f"3. Warm-user NDCG@10 vs popularity: test baseline **{pop:.4f}**; the CV number comes "
+               f"from the Day 10 test run (a +12% claim would need ≥ {1.12 * pop:.4f}).{val}\n")
     md += ("4. Benchmark: NDCG / Recall / Precision / MRR @5/10/20 vs popularity and TF-IDF — "
            "tables above; final table Day 10.\n")
     return md

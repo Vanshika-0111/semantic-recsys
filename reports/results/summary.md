@@ -11,6 +11,7 @@ All results were computed on the same frozen split ✓
 - `day05_retrieval.json`: split `a99079d4a40a…`
 - `day06_coldstart.json`: split `a99079d4a40a…`
 - `day08_candidates.json`: split `a99079d4a40a…`
+- `day09_ranker.json`: split `a99079d4a40a…`
 
 ## Warm users — test (fit on train+val, 189,197 users)
 
@@ -65,6 +66,30 @@ Popular top-400 ∪ FAISS top-100, chosen on validation (highest val recall with
 
 Ceiling for the ranker on validation (relevant candidates first): NDCG@10 = 0.6181.
 
+## Stage 2: LightGBM ranker — validation (5,000 ranker-valid users, Day 9)
+
+Selected: popular 400 ∪ FAISS 100, graded labels, 127 leaves, 83 trees. Test numbers come on Day 10.
+
+| model | config | ndcg@5 | ndcg@10 | ndcg@20 | recall@10 | mrr@10 |
+|---|---|---:|---:|---:|---:|---:|
+| popularity | Day 3 baseline, same users | 0.0439 | 0.0485 | 0.0661 | 0.0544 | 0.0942 |
+| LightGBM ranker — popular 400 ∪ FAISS 100 | graded labels, 127 leaves | 0.0833 | 0.0909 | 0.1145 | 0.1001 | 0.1765 |
+| LightGBM ranker — popular 500 (FAISS top-100 as feature) | binary labels, 127 leaves | 0.0832 | 0.0905 | 0.1140 | 0.0985 | 0.1745 |
+
+| model | vs | change | 95% CI of diff | p(≤0) |
+|---|---|---:|---:|---:|
+| ranker (union) | popularity | +87.4% | [+0.0383, +0.0465] | 0.0000 |
+| ranker (pop500) | popularity | +86.6% | [+0.0379, +0.0461] | 0.0000 |
+| ranker (union) | ranker (pop500) | +0.4% | [-0.0019, +0.0025] | 0.3750 |
+
+Cold mode (pseudo-cold validation, 5,000 users), NDCG@10:
+
+| seeds | popularity | Day 6 semantic rerank | warm ranker (as is) | cold ranker (ours) |
+|---:|---:|---:|---:|---:|
+| 1 | 0.0292 | 0.0291 | 0.0314 | 0.0338 |
+| 3 | 0.0304 | 0.0312 | 0.0365 | 0.0344 |
+| 5 | 0.0315 | 0.0344 | 0.0406 | 0.0379 |
+
 ## FAISS Flat vs HNSW — 23,109 × 384 vectors, 1 thread
 
 | top-k | HNSW setting | recall vs exact | p95 ms | speed-up vs Flat |
@@ -82,6 +107,6 @@ Ceiling for the ranker on validation (relevant candidates first): NDCG@10 = 0.61
 ## CV bullets — what the numbers support so far
 
 1. Cold start: **+5.7% NDCG@10** over popularity with 5 onboarding picks (p = 0.005, 5,000 held-out users). ✓
-2. Two-stage retrieval & ranking: stage 1 = pop 400 + faiss 100, test recall 0.5188 (popularity alone at the same size: 0.5306); ranker pending (Day 9).
-3. Warm-user NDCG@10 vs popularity: baseline **0.0501**; the final number comes from the Day 10 ranker (a +12% claim would need ≥ 0.0561).
+2. Two-stage retrieval & ranking: stage 1 = pop 400 + faiss 100, test recall 0.5188 (popularity alone at the same size: 0.5306); ranker ✓ (Day 9, validation): popular 400 ∪ FAISS 100 chosen end to end; test on Day 10.
+3. Warm-user NDCG@10 vs popularity: test baseline **0.0501**; the CV number comes from the Day 10 test run (a +12% claim would need ≥ 0.0561). Day 9 validation: ranker 0.0909 vs popularity 0.0485 on the same users (+87.4%).
 4. Benchmark: NDCG / Recall / Precision / MRR @5/10/20 vs popularity and TF-IDF — tables above; final table Day 10.

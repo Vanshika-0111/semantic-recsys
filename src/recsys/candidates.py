@@ -16,6 +16,11 @@ to popularity alone, but the two lists overlap only 3.5%):
   union_candidates  the union in a fixed order (popular first, then FAISS-only), plus for every
                     candidate its position in each source -> ranker features in_pop / pop_rank /
                     in_faiss / faiss_rank (Day 8 features.py)
+
+Day 9 — candidate_set: the stage 1 the ranker sees. Either the union, or popular top-500 alone
+with FAISS used only as a FEATURE (in_faiss / faiss_rank = "is it in the user's FAISS top-100?",
+recorded even when FAISS did not add the movie). Same feature meaning in both, so the two
+candidate sets can be compared end to end with one feature definition.
 """
 from __future__ import annotations
 
@@ -146,3 +151,18 @@ def positions_in(C: np.ndarray, src: np.ndarray) -> np.ndarray:
     hit = (C != PAD) & (s_keys[j] == c_keys)
     out[hit] = s_pos[j[hit]]
     return out
+
+
+def candidate_set(pop_list: np.ndarray, faiss_list: np.ndarray, n_pop: int, m_faiss: int,
+                  faiss_feature_m: int | None = None) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+    """Day 9 stage 1: popular top-n_pop ∪ FAISS top-m_faiss, plus source ranks for the features.
+
+    faiss_feature_m : the FAISS list length that defines in_faiss / faiss_rank (default m_faiss).
+                      With m_faiss = 0 and faiss_feature_m = 100 the candidates are popularity only,
+                      but each candidate still records its position in the user's FAISS top-100.
+    With faiss_feature_m = m_faiss this is exactly union_candidates (Day 8)."""
+    C, ranks = union_candidates({"pop": pop_list, "faiss": faiss_list}, {"pop": n_pop, "faiss": m_faiss})
+    f = m_faiss if faiss_feature_m is None else faiss_feature_m
+    if f:
+        ranks["faiss"] = positions_in(C, np.asarray(faiss_list, dtype=np.int64)[:, :f])
+    return C, ranks
