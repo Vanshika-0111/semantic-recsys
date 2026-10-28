@@ -13,6 +13,7 @@ All results were computed on the same frozen split ✓
 - `day08_candidates.json`: split `a99079d4a40a…`
 - `day09_ranker.json`: split `a99079d4a40a…`
 - `day10_final.json`: split `a99079d4a40a…`
+- `day11_diversity.json`: split `a99079d4a40a…`
 
 ## Warm users — test (fit on train+val, 189,197 users)
 
@@ -147,6 +148,20 @@ Ablations (validation, 5,000 users; same split + config, feature set removed):
 | 5 | policy (ours) | Day 6 semantic rerank | +20.4% | [+0.0043, +0.0090] | 0.0000 | yes |
 
 SHAP (1,000 test users), share of mean |SHAP|: user-item metadata 47%, item popularity & quality 20%, semantic (embeddings / FAISS) 19%, item metadata 9%, user 6%.
+
+## Diversity — MMR re-ranking, test (189,197 users, Day 11)
+
+Chosen on validation: genre similarity, λ 0.7 (most diverse setting within 2% of the ranker's NDCG@10).
+
+| model | lambda | ndcg@10 | recall@10 | coverage@10 | genre_div@10 | sem_div@10 | genres@10 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| popularity |  | 0.0501 | 0.0548 | 0.0166 | 0.7135 | 0.9273 | 10.9440 |
+| ranker (λ 1) | 1.0000 | 0.0866 | 0.0936 | 0.2550 | 0.6152 | 0.8930 | 10.2000 |
+| MMR · genre similarity | 0.7000 | 0.0854 | 0.0926 | 0.2486 | 0.6809 | 0.9091 | 11.4940 |
+
+Selected MMR vs the ranker (paired bootstrap): ndcg@10 -1.4% [CI -0.0014, -0.0011]; recall@10 -1.1% [CI -0.0013, -0.0007]; mrr@10 -0.5% [CI -0.0012, -0.0007]; genre_ild +10.7% [CI +0.0654, +0.0659]; sem_ild +1.8% [CI +0.0160, +0.0162]; n_genres +12.7% [CI +1.2879, +1.3010].
+
+Explanations: "Because you liked X" available for 54% of served recommendations. Removing the cited X lowers the movie's score by 0.486 (rank +25.7) vs 0.018 (rank +0.6) for a random other recent like (2,679 recommendations).
 
 ## FAISS Flat vs HNSW — 23,109 × 384 vectors, 1 thread
 

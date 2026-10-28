@@ -64,7 +64,7 @@ from recsys.experiment import (COLS, SHOW, TCOLS, chosen_settings, eval_users, h
                                read_results, row, rows_of, save_results, split_fingerprint)
 from recsys.features import FEATURE_NAMES  # noqa: E402
 from recsys.metrics import PAD, beyond_accuracy, evaluate  # noqa: E402
-from recsys.ranker import (RankData, build_two_stage, predict, split_users,  # noqa: E402
+from recsys.ranker import (build_two_stage, load_rank_data, predict, split_users,  # noqa: E402
                            top_from_scores, topk_by_score, train_ranker)
 
 KS = config.EVAL_KS
@@ -139,23 +139,6 @@ class Context:
 
     def ablation(self, name: str):
         return self.booster(self.run_file(f"day10_ranker_{name}.txt"))
-
-
-def load_rank_data(path: Path) -> RankData:
-    import pyarrow.parquet as pq
-
-    if not path.exists():
-        raise SystemExit(f"{path.name} missing — run scripts/run_candidates.py / run_ranker.py first")
-    tbl = pq.read_table(path)
-    X = np.empty((tbl.num_rows, len(FEATURE_NAMES)), dtype=np.float32)
-    for j, f in enumerate(FEATURE_NAMES):
-        X[:, j] = tbl.column(f).to_numpy()
-    d = RankData(X, tbl.column("rating").to_numpy().astype(np.float32),
-                 tbl.column("userId").to_numpy().astype(np.int64),
-                 tbl.column("movieId").to_numpy().astype(np.int64), list(FEATURE_NAMES))
-    del tbl
-    gc.collect()
-    return d
 
 
 def sig(name: str, vs: str, a: pd.DataFrame, b: pd.DataFrame, metric: str = "ndcg@10") -> dict:

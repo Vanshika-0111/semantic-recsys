@@ -44,6 +44,7 @@ A step counts as done only if its results file matches the current split *and* i
 | candidates | `run_candidates.py` | Day 8: stage-1 union (popular ∪ FAISS) + leak-free ranker features |
 | ranker | `run_ranker.py` | Day 9: LightGBM LambdaMART ranker on validation (+ cold mode) |
 | final | `run_final.py` | Day 10: final test table, ablations, real cold users, SHAP |
+| diversity | `run_diversity.py` | Day 11: MMR diversity re-ranking + "Because you liked X" explanations |
 | summary | `summarize_results.py` | one page of headline numbers from all days |
 
 Every script also runs on its own and has `--smoke` and `--stages …`.
@@ -205,6 +206,21 @@ Test is used once, here; every setting was chosen on validation.
   feature and per group, plus worked "why this movie" examples.
 - Results: `reports/results/day10_final.md`; charts `reports/figures/day10_*.png`; the headline
   numbers and CV-bullet status are in `reports/results/summary.md`.
+
+## Diversity + explanations (Day 11)
+
+- **MMR re-ranking** (`src/recsys/diversity.py`): the ranker's top-50 is re-ordered greedily by
+  λ·relevance − (1−λ)·(max similarity to the movies already picked); λ = 1 is the ranker unchanged.
+  Two similarity spaces (bge embeddings, genres) × λ grid. λ is chosen on validation by a rule fixed
+  before the run (most diverse setting within 2% of the ranker's NDCG@10), then measured once on
+  test with paired bootstraps on accuracy AND diversity (genre + semantic intra-list diversity,
+  genres per list, coverage). `TwoStage.recommend(..., mmr={"lambda", "pool", "space"})` serves it.
+- **Explanations** (`src/recsys/explain.py`): the cited movie X is the user's recent like with the
+  highest cosine to the recommendation — exactly the ranker feature `max_cos_liked`; TreeSHAP picks
+  which reason to show (similar movie / genres / era / popular / highly rated).
+  **Faithfulness check:** remove X from the history and re-score, vs removing a random other recent like.
+- Results: `reports/results/day11_diversity.md`, `day11_examples.md`; chart
+  `reports/figures/day11_mmr_tradeoff.png`.
 
 ## Data attribution
 

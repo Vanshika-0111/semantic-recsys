@@ -153,3 +153,17 @@ COLD_RANKER_SEEDS = (1, 3, 5)
 COLD_POLICY_WARM_FROM = 3
 SHAP_USERS = 1000                            # warm test users whose candidates get SHAP values
 RELEASE_POOL = 2000                          # release-aware popularity: search the top-2000 first
+
+# --- Day 11: diversity re-ranking (MMR) + "Because you liked X" explanations ---
+# MMR re-orders the ranker's top-MMR_POOL; λ = 1 is the ranker unchanged. Chosen on validation
+# (Day 9 ranker-valid users) with a rule written before the run: per similarity space, the most
+# genre-diverse λ that keeps NDCG@10 within MMR_MAX_NDCG_LOSS (relative) of the ranker; then the
+# space whose list gains more diversity, averaged over BOTH measures (genre + semantic), so a space
+# is never chosen only for the measure it optimises.
+MMR_POOL = 50
+MMR_LAMBDAS = (1.0, 0.95, 0.9, 0.85, 0.8, 0.7, 0.6, 0.5, 0.3, 0.0)
+MMR_SPACES = ("embedding", "genre")
+MMR_MAX_NDCG_LOSS = 0.02                     # accuracy budget for diversity: lose at most 2%
+EXPLAIN_MIN_COS = 0.3                        # cite "Because you liked X" only from this cosine
+EXPLAIN_USERS = 500                          # test users for explanation stats + counterfactuals
+EXAMPLE_USERS = 3                            # worked examples in day11_examples.md

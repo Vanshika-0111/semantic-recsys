@@ -23,6 +23,7 @@ FILES = {
     "day08": "day08_candidates.json",
     "day09": "day09_ranker.json",
     "day10": "day10_final.json",
+    "day11": "day11_diversity.json",
 }
 WARM_COLS = ["model", "config", "ndcg@5", "ndcg@10", "ndcg@20", "recall@10", "precision@10",
              "mrr@10", "coverage@10", "long_tail@10"]
@@ -135,6 +136,7 @@ def build_summary(results_dir: Path | None = None) -> str:
 
     md += ranker_section(res)
     md += final_section(res)
+    md += diversity_section(res)
 
     ann = res["day05"].get("ann", {})
     if ann.get("recommended"):
@@ -229,6 +231,34 @@ def final_section(res: dict[str, dict]) -> str:
     if sh.get("groups_all"):
         md += (f"SHAP ({sh['n_users']:,} test users), share of mean |SHAP|: "
                + ", ".join(f"{g['group']} {100 * g['share']:.0f}%" for g in sh["groups_all"]) + ".\n\n")
+    return md
+
+
+def diversity_section(res: dict[str, dict]) -> str:
+    """Day 11: MMR accuracy-vs-diversity at the validation-chosen λ, and explanation faithfulness."""
+    d = res.get("day11", {})
+    t = d.get("test", {})
+    if not t.get("rows"):
+        return ""
+    sel = t["selected"]
+    keep = [r for r in t["rows"] if r["model"] == "popularity" or (r.get("space") == "embedding" and r["lambda"] == 1.0)
+            or (r.get("space") == sel["space"] and r["lambda"] == sel["lambda"])]
+    md = (f"## Diversity — MMR re-ranking, test ({t['n_users']:,} users, Day 11)\n\n"
+          f"Chosen on validation: {sel['space']} similarity, λ {sel['lambda']} (most diverse setting within "
+          f"{100 * config.MMR_MAX_NDCG_LOSS:.0f}% of the ranker's NDCG@10).\n\n")
+    md += md_table(keep, ["model", "lambda", "ndcg@10", "recall@10", "coverage@10", "genre_div@10", "sem_div@10",
+                          "genres@10"]) + "\n"
+    sig = [s for s in t.get("significance", []) if s.get("selected")]
+    if sig:
+        md += "Selected MMR vs the ranker (paired bootstrap): " + "; ".join(
+            f"{s['metric']} {100 * s['rel_change']:+.1f}% [CI {s['ci95'][0]:+.4f}, {s['ci95'][1]:+.4f}]" for s in sig) + ".\n\n"
+    cf = d.get("explain", {}).get("counterfactual")
+    if cf:
+        md += (f"Explanations: \"Because you liked X\" available for {100 * d['explain']['because_share']:.0f}% of served "
+               f"recommendations. Removing the cited X lowers the movie's score by {cf['cited']['mean_score_drop']:.3f} "
+               f"(rank {cf['cited']['mean_rank_change']:+.1f}) vs {cf['control']['mean_score_drop']:.3f} "
+               f"(rank {cf['control']['mean_rank_change']:+.1f}) for a random other recent like "
+               f"({cf['n_pairs']:,} recommendations).\n\n")
     return md
 
 

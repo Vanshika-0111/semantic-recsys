@@ -124,6 +124,10 @@ STEPS = [
                      ("runs/day10_ranker_no_semantic.txt", "runs/day10_test_per_user.parquet",
                       "runs/day10_cold_per_user.parquet")),
          smoke_flag=True, what="Day 10: final test table, ablations, real cold users, SHAP"),
+    Step("diversity", "run_diversity.py",
+         has_results("day11_diversity", ("tune", "test", "explain"),
+                     ("runs/day11_test_per_user.parquet",)),
+         smoke_flag=True, what="Day 11: MMR diversity re-ranking + 'Because you liked X' explanations"),
 ]
 NAMES = [s.name for s in STEPS]
 

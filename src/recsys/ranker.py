@@ -143,6 +143,28 @@ class RankData:
         return RankData(self.X[:, idx], self.rating, self.users, self.movies, list(names))
 
 
+def load_rank_data(path) -> RankData:
+    """A feature table written by Day 8/9 (parquet) as RankData, column by column (flat memory)."""
+    import gc
+
+    import pyarrow.parquet as pq
+
+    from pathlib import Path
+    path = Path(path)
+    if not path.exists():
+        raise SystemExit(f"{path.name} missing — run scripts/run_candidates.py / run_ranker.py first")
+    tbl = pq.read_table(path)
+    X = np.empty((tbl.num_rows, len(FEATURE_NAMES)), dtype=np.float32)
+    for j, f in enumerate(FEATURE_NAMES):
+        X[:, j] = tbl.column(f).to_numpy()
+    d = RankData(X, tbl.column("rating").to_numpy().astype(np.float32),
+                 tbl.column("userId").to_numpy().astype(np.int64),
+                 tbl.column("movieId").to_numpy().astype(np.int64), list(FEATURE_NAMES))
+    del tbl
+    gc.collect()
+    return d
+
+
 def lgb_dataset(d: RankData, scheme: str, threshold: float = 4.0, reference=None):
     import lightgbm as lgb
 
@@ -290,10 +312,30 @@ class TwoStage:
             S = predict(booster, X).reshape(U, K)
         return np.where(fb.candidates == PAD, -np.inf, S)
 
-    def recommend(self, hist_u: pd.DataFrame, users: np.ndarray, k: int) -> np.ndarray:
-        """(U, k) movieIds, best first (ties -> union order)."""
+    def recommend(self, hist_u: pd.DataFrame, users: np.ndarray, k: int,
+                  mmr: dict | None = None) -> np.ndarray:
+        """(U, k) movieIds, best first (ties -> union order). mmr = {"lambda", "pool", "space"}
+        re-ranks the ranker's top-`pool` for diversity (Day 11); lambda 1 = no change."""
         fb = self.feature_batch(hist_u, users)
-        return top_from_scores(fb.candidates, self.scores(fb), k)
+        return self.top(fb, self.scores(fb), k, mmr)
+
+    def mmr_vectors(self, space: str) -> np.ndarray:
+        """Item vectors MMR measures similarity in: 'embedding' = the features' (centered) bge
+        vectors, 'genre' = multi-hot genres."""
+        if space == "embedding":
+            return self.builder.V
+        if space == "genre":
+            return np.asarray(self.builder.genres, dtype=np.float32)
+        raise ValueError(f"unknown MMR space {space!r}")
+
+    def top(self, fb: FeatureBatch, S: np.ndarray, k: int, mmr: dict | None = None) -> np.ndarray:
+        if not mmr or float(mmr.get("lambda", 1.0)) == 1.0:
+            return top_from_scores(fb.candidates, S, k)
+        from .diversity import mmr_rerank
+
+        lam = float(mmr["lambda"])
+        return mmr_rerank(fb.candidates, S, self.mmr_vectors(mmr.get("space", "embedding")),
+                          self.pop.index, [lam], k, int(mmr.get("pool", 50)))[lam]
 
 
 def top_from_scores(C: np.ndarray, S: np.ndarray, k: int) -> np.ndarray:
