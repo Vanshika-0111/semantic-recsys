@@ -1,7 +1,7 @@
 """Day 7: the whole project in ONE command, in the right order, reproducibly.
 
     download -> prepare -> eda -> split -> baselines -> embeddings -> retrieval -> coldstart
-      -> candidates -> ranker -> summary
+      -> candidates -> ranker -> final -> summary
 
 Each step is the existing script (nothing is re-implemented here). A step whose outputs already
 exist is SKIPPED, so a second run costs seconds — except the split, which is never rebuilt: if it
@@ -119,6 +119,11 @@ STEPS = [
          has_results("day09_ranker", ("selected", "train", "cold"),
                      ("runs/day09_ranker.txt", "runs/day09_cold_ranker.txt")),
          smoke_flag=True, what="Day 9: LightGBM LambdaMART ranker (validation) + cold mode"),
+    Step("final", "run_final.py",
+         has_results("day10_final", ("ablation", "test", "cold", "shap"),
+                     ("runs/day10_ranker_no_semantic.txt", "runs/day10_test_per_user.parquet",
+                      "runs/day10_cold_per_user.parquet")),
+         smoke_flag=True, what="Day 10: final test table, ablations, real cold users, SHAP"),
 ]
 NAMES = [s.name for s in STEPS]
 

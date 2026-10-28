@@ -12,6 +12,7 @@ All results were computed on the same frozen split ✓
 - `day06_coldstart.json`: split `a99079d4a40a…`
 - `day08_candidates.json`: split `a99079d4a40a…`
 - `day09_ranker.json`: split `a99079d4a40a…`
+- `day10_final.json`: split `a99079d4a40a…`
 
 ## Warm users — test (fit on train+val, 189,197 users)
 
@@ -90,6 +91,63 @@ Cold mode (pseudo-cold validation, 5,000 users), NDCG@10:
 | 3 | 0.0304 | 0.0312 | 0.0365 | 0.0344 |
 | 5 | 0.0315 | 0.0344 | 0.0406 | 0.0379 |
 
+## FINAL — warm users, test (189,197 users, Day 10)
+
+Ranker trained on validation (Day 9), stage 1 + features fit on train+val, scored once on test.
+
+| model | ndcg@5 | ndcg@10 | ndcg@20 | recall@10 | precision@10 | mrr@10 | coverage@10 | vs popularity |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| popularity (Day 3 baseline) | 0.0461 | 0.0501 | 0.0674 | 0.0548 | 0.0345 | 0.1013 | 0.0166 | +0.0% |
+| release-aware popularity | 0.0502 | 0.0559 | 0.0744 | 0.0622 | 0.0384 | 0.1103 | 0.0180 | +11.4% |
+| two-stage ranker (ours) | 0.0803 | 0.0866 | 0.1104 | 0.0936 | 0.0570 | 0.1713 | 0.2550 | +72.8% |
+| ranker + release filter | 0.0823 | 0.0891 | 0.1138 | 0.0965 | 0.0587 | 0.1753 | 0.2569 | +77.7% |
+| ranker w/o semantic features | 0.0626 | 0.0703 | 0.0926 | 0.0790 | 0.0481 | 0.1362 | 0.2616 | +40.3% |
+| ranker w/o release-year features | 0.0741 | 0.0794 | 0.0999 | 0.0848 | 0.0520 | 0.1605 | 0.2312 | +58.3% |
+| ranker w/o any semantics (pop-500, no semantic features) | 0.0624 | 0.0698 | 0.0916 | 0.0783 | 0.0478 | 0.1349 | 0.0396 | +39.2% |
+| TF-IDF item-kNN (Day 3) | 0.0176 | 0.0178 | 0.0215 | 0.0181 | 0.0111 | 0.0410 | 0.6248 | -64.6% |
+| bge-small embeddings (Day 5) | 0.0163 | 0.0169 | 0.0208 | 0.0175 | 0.0107 | 0.0388 | 0.9101 | -66.4% |
+
+| model | vs | change | 95% CI of diff | p(≤0) | significant |
+|---|---|---:|---:|---:|---:|
+| two-stage ranker (ours) | popularity (Day 3 baseline) | +72.7% | [+0.0358, +0.0371] | 0.0000 | yes |
+| two-stage ranker (ours) | release-aware popularity | +55.0% | [+0.0301, +0.0314] | 0.0000 | yes |
+| two-stage ranker (ours) | TF-IDF item-kNN (Day 3) | +387.5% | [+0.0682, +0.0695] | 0.0000 | yes |
+| two-stage ranker (ours) | bge-small embeddings (Day 5) | +413.9% | [+0.0691, +0.0704] | 0.0000 | yes |
+| two-stage ranker (ours) | ranker w/o semantic features | +23.1% | [+0.0157, +0.0168] | 0.0000 | yes |
+| two-stage ranker (ours) | ranker w/o release-year features | +9.1% | [+0.0068, +0.0076] | 0.0000 | yes |
+| two-stage ranker (ours) | ranker w/o any semantics (pop-500, no semantic features) | +24.1% | [+0.0163, +0.0173] | 0.0000 | yes |
+| two-stage ranker (ours) | ranker + release filter | -2.8% | [-0.0025, -0.0024] | 1.0000 | no |
+
+Ablations (validation, 5,000 users; same split + config, feature set removed):
+
+| model | candidates | features | ndcg@10 |
+|---|---|---:|---:|
+| popularity (Day 3 baseline) | popular 400 ∪ FAISS 100 | 21 | 0.0485 |
+| two-stage ranker (ours) | popular 400 ∪ FAISS 100 | 21 | 0.0909 |
+| ranker w/o semantic features | popular 400 ∪ FAISS 100 | 16 | 0.0753 |
+| ranker w/o release-year features | popular 400 ∪ FAISS 100 | 19 | 0.0853 |
+| ranker w/o any semantics (pop-500, no semantic features) | popular 500 | 16 | 0.0746 |
+
+## FINAL — real cold-start users, test (5,000 users, Day 10), NDCG@10
+
+| seeds | popularity | policy (ours) | Day 6 semantic rerank | cold ranker | warm ranker |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 0.0279 | 0.0279 |  |  |  |
+| 1 | 0.0288 | 0.0312 | 0.0295 | 0.0312 | 0.0310 |
+| 3 | 0.0297 | 0.0348 | 0.0311 | 0.0322 | 0.0348 |
+| 5 | 0.0305 | 0.0388 | 0.0322 | 0.0340 | 0.0388 |
+
+| seeds | model | vs | change | 95% CI of diff | p(≤0) | significant |
+|---:|---|---|---:|---:|---:|---:|
+| 1 | policy (ours) | popularity | +8.1% | [-0.0002, +0.0049] | 0.0340 | no |
+| 1 | policy (ours) | Day 6 semantic rerank | +5.7% | [-0.0007, +0.0043] | 0.0835 | no |
+| 3 | policy (ours) | popularity | +17.1% | [+0.0026, +0.0076] | 0.0000 | yes |
+| 3 | policy (ours) | Day 6 semantic rerank | +12.1% | [+0.0016, +0.0060] | 0.0010 | yes |
+| 5 | policy (ours) | popularity | +27.2% | [+0.0057, +0.0111] | 0.0000 | yes |
+| 5 | policy (ours) | Day 6 semantic rerank | +20.4% | [+0.0043, +0.0090] | 0.0000 | yes |
+
+SHAP (1,000 test users), share of mean |SHAP|: user-item metadata 47%, item popularity & quality 20%, semantic (embeddings / FAISS) 19%, item metadata 9%, user 6%.
+
 ## FAISS Flat vs HNSW — 23,109 × 384 vectors, 1 thread
 
 | top-k | HNSW setting | recall vs exact | p95 ms | speed-up vs Flat |
@@ -107,6 +165,10 @@ Cold mode (pseudo-cold validation, 5,000 users), NDCG@10:
 ## CV bullets — what the numbers support so far
 
 1. Cold start: **+5.7% NDCG@10** over popularity with 5 onboarding picks (p = 0.005, 5,000 held-out users). ✓
-2. Two-stage retrieval & ranking: stage 1 = pop 400 + faiss 100, test recall 0.5188 (popularity alone at the same size: 0.5306); ranker ✓ (Day 9, validation): popular 400 ∪ FAISS 100 chosen end to end; test on Day 10.
+   - Day 10 policy (two-stage ranker for new users), 1 picks: **+8.1%** vs popularity (p = 0.034, not significant)
+   - Day 10 policy (two-stage ranker for new users), 3 picks: **+17.1%** vs popularity (p = 0.0, significant)
+   - Day 10 policy (two-stage ranker for new users), 5 picks: **+27.2%** vs popularity (p = 0.0, significant)
+2. Two-stage retrieval & ranking: stage 1 = pop 400 + faiss 100, test recall 0.5188 (popularity alone at the same size: 0.5306); ranker ✓ (Day 9, validation): popular 400 ∪ FAISS 100 chosen end to end; tested on Day 10 (below).
 3. Warm-user NDCG@10 vs popularity: test baseline **0.0501**; the CV number comes from the Day 10 test run (a +12% claim would need ≥ 0.0561). Day 9 validation: ranker 0.0909 vs popularity 0.0485 on the same users (+87.4%).
-4. Benchmark: NDCG / Recall / Precision / MRR @5/10/20 vs popularity and TF-IDF — tables above; final table Day 10.
+   - **Day 10 TEST: ranker 0.0866 vs popularity 0.0501 = +72.7%** (p = 0.0, 189,197 users); vs release-aware popularity +55.0%; semantic part (vs the same ranker with no embeddings anywhere) +24.1% (p = 0.0)
+4. Benchmark: NDCG / Recall / Precision / MRR @5/10/20 vs popularity and TF-IDF — final test table above (Day 10) ✓.

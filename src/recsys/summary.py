@@ -22,6 +22,7 @@ FILES = {
     "day06": "day06_coldstart.json",
     "day08": "day08_candidates.json",
     "day09": "day09_ranker.json",
+    "day10": "day10_final.json",
 }
 WARM_COLS = ["model", "config", "ndcg@5", "ndcg@10", "ndcg@20", "recall@10", "precision@10",
              "mrr@10", "coverage@10", "long_tail@10"]
@@ -133,6 +134,7 @@ def build_summary(results_dir: Path | None = None) -> str:
         md += "\n"
 
     md += ranker_section(res)
+    md += final_section(res)
 
     ann = res["day05"].get("ann", {})
     if ann.get("recommended"):
@@ -186,12 +188,65 @@ def ranker_section(res: dict[str, dict]) -> str:
     return md + "\n"
 
 
+def _sig_lines(sigs: list[dict], first: tuple = ()) -> str:
+    rows = [{**s, "change": f"{100 * s['rel_change']:+.1f}%",
+             "95% CI of diff": f"[{s['ci95'][0]:+.4f}, {s['ci95'][1]:+.4f}]", "p(≤0)": s["p_le_0"],
+             "significant": "yes" if s["p_le_0"] < 0.05 and s["ci95"][0] > 0 else "no"} for s in sigs]
+    return md_table(rows, list(first) + ["model", "vs", "change", "95% CI of diff", "p(≤0)", "significant"],
+                    left=("model", "vs"))
+
+
+def final_section(res: dict[str, dict]) -> str:
+    """Day 10: the locked test numbers (warm + cold), ablations and SHAP groups."""
+    d = res.get("day10", {})
+    if not d:
+        return ""
+    md = ""
+    t = d.get("test", {})
+    if t.get("rows"):
+        pop = t["rows"][0]["ndcg@10"]
+        rows = [{**r, "vs popularity": f"{100 * (r['ndcg@10'] / pop - 1):+.1f}%"} for r in t["rows"]]
+        md += (f"## FINAL — warm users, test ({t['n_users']:,} users, Day 10)\n\n"
+               "Ranker trained on validation (Day 9), stage 1 + features fit on train+val, scored once on test.\n\n")
+        md += md_table(rows, ["model", "ndcg@5", "ndcg@10", "ndcg@20", "recall@10", "precision@10", "mrr@10",
+                              "coverage@10", "vs popularity"]) + "\n"
+        md += _sig_lines([s for s in t["significance"] if s["model"].endswith("(ours)")]) + "\n"
+    ab = d.get("ablation", {})
+    if ab.get("rows"):
+        md += (f"Ablations (validation, {ab['n_valid_users']:,} users; same split + config, feature set "
+               "removed):\n\n" + md_table(ab["rows"], ["model", "candidates", "features", "ndcg@10"],
+                                         left=("model", "candidates")) + "\n")
+    c = d.get("cold", {})
+    if c.get("rows"):
+        table = {}
+        for r in c["rows"]:
+            table.setdefault(r["seeds"], {"seeds": r["seeds"]})[r["model"]] = r["ndcg@10"]
+        models = list(dict.fromkeys(r["model"] for r in c["rows"]))
+        md += (f"## FINAL — real cold-start users, test ({c['n_users']:,} users, Day 10), NDCG@10\n\n"
+               + md_table(list(table.values()), ["seeds"] + models) + "\n")
+        md += _sig_lines([s for s in c["significance"] if s["model"] == "policy (ours)"], ("seeds",)) + "\n"
+    sh = d.get("shap", {})
+    if sh.get("groups_all"):
+        md += (f"SHAP ({sh['n_users']:,} test users), share of mean |SHAP|: "
+               + ", ".join(f"{g['group']} {100 * g['share']:.0f}%" for g in sh["groups_all"]) + ".\n\n")
+    return md
+
+
+def _final_sig(res: dict[str, dict], model: str, vs_prefix: str, seeds=None) -> dict | None:
+    d = res.get("day10", {})
+    part = d.get("cold" if seeds is not None else "test", {})
+    for s in part.get("significance", []):
+        if s["model"] == model and s["vs"].startswith(vs_prefix) and (seeds is None or s.get("seeds") == seeds):
+            return s
+    return None
+
+
 def ranker_status(res: dict[str, dict]) -> str:
     sel = res.get("day09", {}).get("selected", {})
     if not sel:
         return "ranker pending (Day 9)."
-    return (f"ranker ✓ (Day 9, validation): {sel['label']} chosen end to end; "
-            f"test on Day 10.")
+    done = "tested on Day 10 (below)" if res.get("day10", {}).get("test") else "test on Day 10"
+    return (f"ranker ✓ (Day 9, validation): {sel['label']} chosen end to end; {done}.")
 
 
 def cv_status(res: dict[str, dict]) -> str:
@@ -207,6 +262,12 @@ def cv_status(res: dict[str, dict]) -> str:
                f"{res['day06']['test'].get('n_users', 0):,} held-out users). ✓\n")
     else:
         md += "1. Cold start: no significant gain over popularity yet.\n"
+    for n in (1, 3, 5):
+        s = _final_sig(res, "policy (ours)", "popularity", n)
+        if s:
+            md += (f"   - Day 10 policy (two-stage ranker for new users), {n} picks: "
+                   f"**{100 * s['rel_change']:+.1f}%** vs popularity (p = {s['p_le_0']}, "
+                   f"{'significant' if s['p_le_0'] < 0.05 and s['ci95'][0] > 0 else 'not significant'})\n")
     t8 = res.get("day08", {}).get("test", {})
     if t8.get("rows"):
         u = t8["rows"][0]
@@ -226,8 +287,17 @@ def cv_status(res: dict[str, dict]) -> str:
                if sel and res["day09"].get("train") else "")
         md += (f"3. Warm-user NDCG@10 vs popularity: test baseline **{pop:.4f}**; the CV number comes "
                f"from the Day 10 test run (a +12% claim would need ≥ {1.12 * pop:.4f}).{val}\n")
+    s = _final_sig(res, "two-stage ranker (ours)", "popularity")
+    if s:
+        rel = _final_sig(res, "two-stage ranker (ours)", "release-aware")
+        nosem = _final_sig(res, "two-stage ranker (ours)", "ranker w/o any semantics")
+        md += (f"   - **Day 10 TEST: ranker {s['mean_a']:.4f} vs popularity {s['mean_b']:.4f} = "
+               f"{100 * s['rel_change']:+.1f}%** (p = {s['p_le_0']}, {s['n_users']:,} users)"
+               + (f"; vs release-aware popularity {100 * rel['rel_change']:+.1f}%" if rel else "")
+               + (f"; semantic part (vs the same ranker with no embeddings anywhere) "
+                  f"{100 * nosem['rel_change']:+.1f}% (p = {nosem['p_le_0']})" if nosem else "") + "\n")
     md += ("4. Benchmark: NDCG / Recall / Precision / MRR @5/10/20 vs popularity and TF-IDF — "
-           "tables above; final table Day 10.\n")
+           + ("final test table above (Day 10) ✓.\n" if s else "tables above; final table Day 10.\n"))
     return md
 
 

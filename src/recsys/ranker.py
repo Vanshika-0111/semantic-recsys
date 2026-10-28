@@ -258,23 +258,50 @@ class TwoStage:
         C, ranks = self.stage1(hist_u, users)
         return self.builder.transform(users, hist_u, C, ranks)
 
+    def feature_batches(self, hist_u: pd.DataFrame, users: np.ndarray,
+                        variants: dict[str, tuple[int, int, int]]) -> dict[str, FeatureBatch]:
+        """Day 10: features for several stage-1 variants {name: (n_pop, m_faiss, faiss_feature_m)}
+        from ONE profile + popularity + FAISS pass (the expensive part). Each batch equals
+        feature_batch() with that variant's sizes (tested)."""
+        seen = user_item_matrix(hist_u, users, self.pop.index, dtype=np.int8)
+        P = self.emb.user_profiles(hist_u, users)
+        n_max = max(v[0] for v in variants.values())
+        m_max = max(max(v[1], v[2]) for v in variants.values())
+        pop_l = self.pop.recommend(seen, n_max)
+        faiss_l = faiss_candidates(self.flat, P, seen, m_max, self.faiss_batch)
+        out = {}
+        for name, (n, m, f) in variants.items():
+            C, ranks = candidate_set(pop_l, faiss_l, n, m, f)
+            out[name] = self.builder.transform(users, hist_u, C, ranks)
+        return out
+
     def scores(self, fb: FeatureBatch) -> np.ndarray:
         """(U, K) booster scores, -inf on PAD; without a booster: union order (popular first)."""
+        return self.score_with(fb, self.booster, self.features)
+
+    @staticmethod
+    def score_with(fb: FeatureBatch, booster, features: list[str]) -> np.ndarray:
+        """scores() for any booster and its feature list (Day 10 ablation models)."""
         U, K = fb.candidates.shape
-        if self.booster is None:
+        if booster is None:
             S = -np.tile(np.arange(K, dtype=np.float64), (U, 1))
         else:
-            X = np.stack([fb.X[n].ravel() for n in self.features], axis=1)
-            S = predict(self.booster, X).reshape(U, K)
+            X = np.stack([fb.X[n].ravel() for n in features], axis=1)
+            S = predict(booster, X).reshape(U, K)
         return np.where(fb.candidates == PAD, -np.inf, S)
 
     def recommend(self, hist_u: pd.DataFrame, users: np.ndarray, k: int) -> np.ndarray:
         """(U, k) movieIds, best first (ties -> union order)."""
         fb = self.feature_batch(hist_u, users)
-        S = self.scores(fb)
-        order = np.argsort(-S, axis=1, kind="stable")[:, :k]
-        top = np.take_along_axis(fb.candidates, order, axis=1)
-        return np.where(np.isfinite(np.take_along_axis(S, order, axis=1)), top, PAD)
+        return top_from_scores(fb.candidates, self.scores(fb), k)
+
+
+def top_from_scores(C: np.ndarray, S: np.ndarray, k: int) -> np.ndarray:
+    """(U, k) candidates by score, best first; ties keep candidate order; -inf (PAD or filtered
+    out) never shown -> PAD."""
+    order = np.argsort(-S, axis=1, kind="stable")[:, :k]
+    top = np.take_along_axis(C, order, axis=1)
+    return np.where(np.isfinite(np.take_along_axis(S, order, axis=1)), top, PAD)
 
 
 def build_two_stage(catalog, raw_vectors: np.ndarray, chosen: dict, history: pd.DataFrame,

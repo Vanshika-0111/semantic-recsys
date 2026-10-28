@@ -43,6 +43,7 @@ A step counts as done only if its results file matches the current split *and* i
 | coldstart | `run_coldstart.py` | Day 6: cold-start onboarding (seeds / text) |
 | candidates | `run_candidates.py` | Day 8: stage-1 union (popular ∪ FAISS) + leak-free ranker features |
 | ranker | `run_ranker.py` | Day 9: LightGBM LambdaMART ranker on validation (+ cold mode) |
+| final | `run_final.py` | Day 10: final test table, ablations, real cold users, SHAP |
 | summary | `summarize_results.py` | one page of headline numbers from all days |
 
 Every script also runs on its own and has `--smoke` and `--stages …`.
@@ -51,7 +52,7 @@ Every script also runs on its own and has `--smoke` and `--stages …`.
 
 ```
 src/recsys/      library code: config, data, split, metrics, text, baselines, embeddings, ann,
-                 candidates, features, ranker, coldstart, experiment (shared script plumbing), summary
+                 candidates, features, ranker, coldstart, evaluation, experiment (shared script plumbing), summary
 scripts/         runnable pipeline steps + run_pipeline.py
 tests/           unit tests (expected values hand-computed in comments)
 reports/         EDA summary, figures, results/ (json + markdown per day, summary.md, manifest)
@@ -186,6 +187,24 @@ Results: `reports/results/day06_coldstart.md`, chart `reports/figures/day06_cold
   with popularity, the Day 6 semantic rerank and the warm ranker applied as is.
 - Results: `reports/results/day09_ranker.md`, chart `reports/figures/day09_ranker_val.png`;
   models `data/runs/day09_ranker.txt`, `data/runs/day09_cold_ranker.txt` (git-ignored).
+
+## Final evaluation (Day 10)
+
+Test is used once, here; every setting was chosen on validation.
+
+- **Warm users:** the Day 9 ranker (trained on val labels) with stage 1 + features fit on train+val,
+  scored on all warm test users at K = 5/10/20 against popularity, a **release-date-aware
+  popularity** (only movies released by the year of the user's last training rating — the per-user
+  split otherwise lets popularity recommend movies a user could not have seen), TF-IDF and the
+  embedding recommender. Paired bootstrap for every comparison.
+- **Ablations** (retrained on the Day 9 split + config): without the 5 semantic features; without
+  any semantics (popular-500 candidates + no semantic features); without release-year features.
+- **Real cold-start users:** popularity, Day 6 semantic rerank, cold ranker, warm ranker, and the
+  policy chosen on pseudo-cold validation (0 picks → popularity, 1–2 → cold ranker, ≥ 3 → warm).
+- **SHAP:** exact TreeSHAP from LightGBM (`pred_contrib`) on 1,000 test users' candidates, per
+  feature and per group, plus worked "why this movie" examples.
+- Results: `reports/results/day10_final.md`; charts `reports/figures/day10_*.png`; the headline
+  numbers and CV-bullet status are in `reports/results/summary.md`.
 
 ## Data attribution
 

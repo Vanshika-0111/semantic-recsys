@@ -1,0 +1,2230 @@
+{
+  "split_fingerprint": "a99079d4a40ab6808529cf3166bbc02268adc9709f06d24378ee322587988152",
+  "ablation": {
+    "split": "val (history = train, labels = val), Day 9 ranker-valid users",
+    "n_train_users": 1500,
+    "n_valid_users": 500,
+    "config": {
+      "learning_rate": 0.1,
+      "min_data_in_leaf": 200,
+      "feature_fraction": 0.8,
+      "lambda_l2": 1.0,
+      "truncation_level": 30,
+      "labels": "graded",
+      "num_leaves": 31
+    },
+    "rows": [
+      {
+        "model": "popularity (Day 3 baseline)",
+        "ndcg@5": 0.04569,
+        "recall@5": 0.03362,
+        "precision@5": 0.0416,
+        "mrr@5": 0.08567,
+        "hit_rate@5": 0.152,
+        "ndcg@10": 0.05182,
+        "recall@10": 0.05874,
+        "precision@10": 0.0354,
+        "mrr@10": 0.09663,
+        "hit_rate@10": 0.234,
+        "ndcg@20": 0.07175,
+        "recall@20": 0.1044,
+        "precision@20": 0.0311,
+        "mrr@20": 0.1049,
+        "hit_rate@20": 0.36,
+        "n_users": 500,
+        "candidates": "popular 400 \u222a FAISS 100",
+        "features": 21
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "ndcg@5": 0.06728,
+        "recall@5": 0.05603,
+        "precision@5": 0.0612,
+        "mrr@5": 0.1278,
+        "hit_rate@5": 0.246,
+        "ndcg@10": 0.08081,
+        "recall@10": 0.09623,
+        "precision@10": 0.055,
+        "mrr@10": 0.14553,
+        "hit_rate@10": 0.384,
+        "ndcg@20": 0.1033,
+        "recall@20": 0.14636,
+        "precision@20": 0.0426,
+        "mrr@20": 0.15423,
+        "hit_rate@20": 0.504,
+        "n_users": 500,
+        "candidates": "popular 400 \u222a FAISS 100",
+        "features": 21
+      },
+      {
+        "model": "ranker w/o semantic features",
+        "ndcg@5": 0.05051,
+        "recall@5": 0.04293,
+        "precision@5": 0.0468,
+        "mrr@5": 0.0983,
+        "hit_rate@5": 0.192,
+        "ndcg@10": 0.06626,
+        "recall@10": 0.08527,
+        "precision@10": 0.0456,
+        "mrr@10": 0.11707,
+        "hit_rate@10": 0.326,
+        "ndcg@20": 0.08544,
+        "recall@20": 0.1274,
+        "precision@20": 0.0361,
+        "mrr@20": 0.12601,
+        "hit_rate@20": 0.458,
+        "n_users": 500,
+        "candidates": "popular 400 \u222a FAISS 100",
+        "features": 16,
+        "best_iter": 56
+      },
+      {
+        "model": "ranker w/o release-year features",
+        "ndcg@5": 0.06247,
+        "recall@5": 0.04719,
+        "precision@5": 0.0556,
+        "mrr@5": 0.12657,
+        "hit_rate@5": 0.23,
+        "ndcg@10": 0.07094,
+        "recall@10": 0.07847,
+        "precision@10": 0.0468,
+        "mrr@10": 0.14049,
+        "hit_rate@10": 0.332,
+        "ndcg@20": 0.09063,
+        "recall@20": 0.12225,
+        "precision@20": 0.0366,
+        "mrr@20": 0.14875,
+        "hit_rate@20": 0.448,
+        "n_users": 500,
+        "candidates": "popular 400 \u222a FAISS 100",
+        "features": 19,
+        "best_iter": 54
+      },
+      {
+        "model": "ranker w/o any semantics (pop-500, no semantic features)",
+        "ndcg@5": 0.05348,
+        "recall@5": 0.04707,
+        "precision@5": 0.0504,
+        "mrr@5": 0.10247,
+        "hit_rate@5": 0.22,
+        "ndcg@10": 0.06756,
+        "recall@10": 0.08669,
+        "precision@10": 0.0462,
+        "mrr@10": 0.11942,
+        "hit_rate@10": 0.342,
+        "ndcg@20": 0.08482,
+        "recall@20": 0.12436,
+        "precision@20": 0.0351,
+        "mrr@20": 0.12539,
+        "hit_rate@20": 0.432,
+        "n_users": 500,
+        "candidates": "popular 500",
+        "features": 16,
+        "best_iter": 57
+      }
+    ],
+    "significance": [
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "ranker w/o semantic features",
+        "metric": "ndcg@10",
+        "n_users": 500,
+        "mean_a": 0.080814,
+        "mean_b": 0.066256,
+        "diff": 0.014558,
+        "ci95": [
+          0.00509,
+          0.025066
+        ],
+        "p_le_0": 0.002,
+        "rel_change": 0.219717
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "ranker w/o any semantics (pop-500, no semantic features)",
+        "metric": "ndcg@10",
+        "n_users": 500,
+        "mean_a": 0.080814,
+        "mean_b": 0.067558,
+        "diff": 0.013256,
+        "ci95": [
+          0.003766,
+          0.023229
+        ],
+        "p_le_0": 0.0025,
+        "rel_change": 0.196222
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "ranker w/o release-year features",
+        "metric": "ndcg@10",
+        "n_users": 500,
+        "mean_a": 0.080814,
+        "mean_b": 0.070936,
+        "diff": 0.009878,
+        "ci95": [
+          0.001626,
+          0.018818
+        ],
+        "p_le_0": 0.0105,
+        "rel_change": 0.139258
+      },
+      {
+        "model": "ranker w/o semantic features",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "ndcg@10",
+        "n_users": 500,
+        "mean_a": 0.066256,
+        "mean_b": 0.051825,
+        "diff": 0.014432,
+        "ci95": [
+          0.002949,
+          0.026238
+        ],
+        "p_le_0": 0.004,
+        "rel_change": 0.278468
+      },
+      {
+        "model": "ranker w/o any semantics (pop-500, no semantic features)",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "ndcg@10",
+        "n_users": 500,
+        "mean_a": 0.067558,
+        "mean_b": 0.051825,
+        "diff": 0.015733,
+        "ci95": [
+          0.004462,
+          0.027288
+        ],
+        "p_le_0": 0.0025,
+        "rel_change": 0.303578
+      },
+      {
+        "model": "ranker w/o release-year features",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "ndcg@10",
+        "n_users": 500,
+        "mean_a": 0.070936,
+        "mean_b": 0.051825,
+        "diff": 0.019111,
+        "ci95": [
+          0.008139,
+          0.029809
+        ],
+        "p_le_0": 0.002,
+        "rel_change": 0.368759
+      }
+    ],
+    "models": {
+      "no_semantic": {
+        "candidates": "union",
+        "variant": [
+          400,
+          100,
+          100
+        ],
+        "features": [
+          "in_pop",
+          "pop_rank",
+          "item_liked_log",
+          "item_count_log",
+          "item_avg_rating",
+          "item_liked_share",
+          "item_recent_log",
+          "item_trend",
+          "item_year",
+          "item_runtime",
+          "user_n_ratings_log",
+          "user_mean_rating",
+          "user_liked_share",
+          "genre_affinity",
+          "year_gap",
+          "pop_gap"
+        ],
+        "dropped": [
+          "in_faiss",
+          "faiss_rank",
+          "cos_profile",
+          "cos_longterm",
+          "max_cos_liked"
+        ],
+        "best_iter": 56,
+        "model_file": "data/runs/day10_ranker_no_semantic_smoke.txt"
+      },
+      "no_year": {
+        "candidates": "union",
+        "variant": [
+          400,
+          100,
+          100
+        ],
+        "features": [
+          "in_pop",
+          "pop_rank",
+          "in_faiss",
+          "faiss_rank",
+          "item_liked_log",
+          "item_count_log",
+          "item_avg_rating",
+          "item_liked_share",
+          "item_recent_log",
+          "item_trend",
+          "item_runtime",
+          "user_n_ratings_log",
+          "user_mean_rating",
+          "user_liked_share",
+          "cos_profile",
+          "cos_longterm",
+          "max_cos_liked",
+          "genre_affinity",
+          "pop_gap"
+        ],
+        "dropped": [
+          "item_year",
+          "year_gap"
+        ],
+        "best_iter": 54,
+        "model_file": "data/runs/day10_ranker_no_year_smoke.txt"
+      },
+      "no_semantics": {
+        "candidates": "pop500",
+        "variant": [
+          500,
+          0,
+          100
+        ],
+        "features": [
+          "in_pop",
+          "pop_rank",
+          "item_liked_log",
+          "item_count_log",
+          "item_avg_rating",
+          "item_liked_share",
+          "item_recent_log",
+          "item_trend",
+          "item_year",
+          "item_runtime",
+          "user_n_ratings_log",
+          "user_mean_rating",
+          "user_liked_share",
+          "genre_affinity",
+          "year_gap",
+          "pop_gap"
+        ],
+        "dropped": [
+          "in_faiss",
+          "faiss_rank",
+          "cos_profile",
+          "cos_longterm",
+          "max_cos_liked"
+        ],
+        "best_iter": 57,
+        "model_file": "data/runs/day10_ranker_no_semantics_smoke.txt"
+      }
+    }
+  },
+  "test": {
+    "split": "test (history = train+val, labels = test), all warm users",
+    "n_users": 3000,
+    "rows": [
+      {
+        "model": "popularity (Day 3 baseline)",
+        "ndcg@5": 0.04775,
+        "recall@5": 0.03495,
+        "precision@5": 0.043,
+        "mrr@5": 0.09359,
+        "hit_rate@5": 0.16767,
+        "ndcg@10": 0.05065,
+        "recall@10": 0.05429,
+        "precision@10": 0.03433,
+        "mrr@10": 0.10303,
+        "hit_rate@10": 0.23833,
+        "ndcg@20": 0.06718,
+        "recall@20": 0.09047,
+        "precision@20": 0.0287,
+        "mrr@20": 0.10915,
+        "hit_rate@20": 0.327,
+        "n_users": 3000,
+        "coverage@10": 0.00619,
+        "long_tail@10": 0.0,
+        "diversity@10": 0.71444,
+        "key": "popularity"
+      },
+      {
+        "model": "release-aware popularity",
+        "ndcg@5": 0.05204,
+        "recall@5": 0.0375,
+        "precision@5": 0.04607,
+        "mrr@5": 0.10299,
+        "hit_rate@5": 0.17933,
+        "ndcg@10": 0.05651,
+        "recall@10": 0.06078,
+        "precision@10": 0.03817,
+        "mrr@10": 0.11337,
+        "hit_rate@10": 0.25833,
+        "ndcg@20": 0.07525,
+        "recall@20": 0.10221,
+        "precision@20": 0.03193,
+        "mrr@20": 0.11983,
+        "hit_rate@20": 0.352,
+        "n_users": 3000,
+        "coverage@10": 0.00658,
+        "long_tail@10": 0.0,
+        "diversity@10": 0.71724,
+        "key": "release_pop"
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "ndcg@5": 0.06727,
+        "recall@5": 0.04779,
+        "precision@5": 0.05907,
+        "mrr@5": 0.13128,
+        "hit_rate@5": 0.224,
+        "ndcg@10": 0.07366,
+        "recall@10": 0.07972,
+        "precision@10": 0.05017,
+        "mrr@10": 0.14555,
+        "hit_rate@10": 0.331,
+        "ndcg@20": 0.09437,
+        "recall@20": 0.12475,
+        "precision@20": 0.03968,
+        "mrr@20": 0.15395,
+        "hit_rate@20": 0.45267,
+        "n_users": 3000,
+        "coverage@10": 0.05985,
+        "long_tail@10": 0.01767,
+        "diversity@10": 0.62492,
+        "key": "ranker",
+        "ms_per_user": 3.39
+      },
+      {
+        "model": "ranker + release filter",
+        "ndcg@5": 0.06964,
+        "recall@5": 0.04969,
+        "precision@5": 0.06147,
+        "mrr@5": 0.13508,
+        "hit_rate@5": 0.231,
+        "ndcg@10": 0.07642,
+        "recall@10": 0.08304,
+        "precision@10": 0.0521,
+        "mrr@10": 0.14953,
+        "hit_rate@10": 0.34,
+        "ndcg@20": 0.09771,
+        "recall@20": 0.12958,
+        "precision@20": 0.04095,
+        "mrr@20": 0.1578,
+        "hit_rate@20": 0.46,
+        "n_users": 3000,
+        "coverage@10": 0.0605,
+        "long_tail@10": 0.0166,
+        "diversity@10": 0.63056,
+        "key": "ranker_release"
+      },
+      {
+        "model": "ranker w/o semantic features",
+        "ndcg@5": 0.05232,
+        "recall@5": 0.03895,
+        "precision@5": 0.048,
+        "mrr@5": 0.10071,
+        "hit_rate@5": 0.18833,
+        "ndcg@10": 0.06003,
+        "recall@10": 0.06876,
+        "precision@10": 0.0424,
+        "mrr@10": 0.11451,
+        "hit_rate@10": 0.294,
+        "ndcg@20": 0.0787,
+        "recall@20": 0.10964,
+        "precision@20": 0.03407,
+        "mrr@20": 0.12254,
+        "hit_rate@20": 0.40833,
+        "n_users": 3000,
+        "coverage@10": 0.05651,
+        "long_tail@10": 0.023,
+        "diversity@10": 0.62996,
+        "key": "no_semantic"
+      },
+      {
+        "model": "ranker w/o release-year features",
+        "ndcg@5": 0.05905,
+        "recall@5": 0.04093,
+        "precision@5": 0.0522,
+        "mrr@5": 0.1177,
+        "hit_rate@5": 0.20233,
+        "ndcg@10": 0.06408,
+        "recall@10": 0.06897,
+        "precision@10": 0.04367,
+        "mrr@10": 0.13079,
+        "hit_rate@10": 0.30067,
+        "ndcg@20": 0.08444,
+        "recall@20": 0.11365,
+        "precision@20": 0.03602,
+        "mrr@20": 0.13909,
+        "hit_rate@20": 0.421,
+        "n_users": 3000,
+        "coverage@10": 0.04816,
+        "long_tail@10": 0.01397,
+        "diversity@10": 0.62159,
+        "key": "no_year"
+      },
+      {
+        "model": "ranker w/o any semantics (pop-500, no semantic features)",
+        "ndcg@5": 0.0526,
+        "recall@5": 0.03945,
+        "precision@5": 0.04753,
+        "mrr@5": 0.10138,
+        "hit_rate@5": 0.18533,
+        "ndcg@10": 0.05985,
+        "recall@10": 0.06789,
+        "precision@10": 0.04167,
+        "mrr@10": 0.11445,
+        "hit_rate@10": 0.28533,
+        "ndcg@20": 0.07893,
+        "recall@20": 0.10949,
+        "precision@20": 0.03422,
+        "mrr@20": 0.12269,
+        "hit_rate@20": 0.40467,
+        "n_users": 3000,
+        "coverage@10": 0.0193,
+        "long_tail@10": 0.0,
+        "diversity@10": 0.64625,
+        "key": "no_semantics"
+      },
+      {
+        "model": "TF-IDF item-kNN (Day 3)",
+        "key": "tfidf",
+        "n_users": 85,
+        "ndcg@5": 0.01152,
+        "ndcg@10": 0.0143,
+        "ndcg@20": 0.01831,
+        "recall@10": 0.01624,
+        "precision@10": 0.00941,
+        "mrr@10": 0.03227,
+        "hit_rate@10": 0.07059
+      },
+      {
+        "model": "bge-small embeddings (Day 5)",
+        "key": "embeddings",
+        "n_users": 3000,
+        "ndcg@5": 0.01666,
+        "ndcg@10": 0.01714,
+        "ndcg@20": 0.02098,
+        "recall@10": 0.0182,
+        "precision@10": 0.0115,
+        "mrr@10": 0.03912,
+        "hit_rate@10": 0.09467
+      }
+    ],
+    "significance": [
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.073664,
+        "mean_b": 0.050651,
+        "diff": 0.023013,
+        "ci95": [
+          0.018216,
+          0.027628
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.454358
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "release-aware popularity",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.073664,
+        "mean_b": 0.056509,
+        "diff": 0.017155,
+        "ci95": [
+          0.012604,
+          0.021582
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.303586
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "TF-IDF item-kNN (Day 3)",
+        "metric": "ndcg@10",
+        "n_users": 85,
+        "mean_a": 0.081433,
+        "mean_b": 0.014302,
+        "diff": 0.067131,
+        "ci95": [
+          0.040671,
+          0.097999
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 4.693889
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "bge-small embeddings (Day 5)",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.073664,
+        "mean_b": 0.01714,
+        "diff": 0.056524,
+        "ci95": [
+          0.051896,
+          0.061465
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 3.297758
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "ranker w/o semantic features",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.073664,
+        "mean_b": 0.060028,
+        "diff": 0.013636,
+        "ci95": [
+          0.009898,
+          0.017517
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.227168
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "ranker w/o release-year features",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.073664,
+        "mean_b": 0.064078,
+        "diff": 0.009586,
+        "ci95": [
+          0.006418,
+          0.012861
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.149605
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "ranker w/o any semantics (pop-500, no semantic features)",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.073664,
+        "mean_b": 0.059848,
+        "diff": 0.013816,
+        "ci95": [
+          0.009882,
+          0.017893
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.230842
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "ranker + release filter",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.073664,
+        "mean_b": 0.076416,
+        "diff": -0.002752,
+        "ci95": [
+          -0.003419,
+          -0.002065
+        ],
+        "p_le_0": 1.0,
+        "rel_change": -0.036016
+      },
+      {
+        "model": "release-aware popularity",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.056509,
+        "mean_b": 0.050651,
+        "diff": 0.005858,
+        "ci95": [
+          0.004974,
+          0.006789
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.115659
+      },
+      {
+        "model": "ranker w/o semantic features",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.060028,
+        "mean_b": 0.050651,
+        "diff": 0.009377,
+        "ci95": [
+          0.005114,
+          0.013587
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.185133
+      },
+      {
+        "model": "ranker w/o release-year features",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.064078,
+        "mean_b": 0.050651,
+        "diff": 0.013427,
+        "ci95": [
+          0.008954,
+          0.017671
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.265094
+      },
+      {
+        "model": "ranker w/o any semantics (pop-500, no semantic features)",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.059848,
+        "mean_b": 0.050651,
+        "diff": 0.009198,
+        "ci95": [
+          0.004546,
+          0.013791
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.181596
+      },
+      {
+        "model": "ranker w/o release-year features",
+        "vs": "release-aware popularity",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.064078,
+        "mean_b": 0.056509,
+        "diff": 0.007569,
+        "ci95": [
+          0.003253,
+          0.011666
+        ],
+        "p_le_0": 0.001,
+        "rel_change": 0.133943
+      }
+    ],
+    "ranker_vs_popularity_by_metric": [
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "ndcg@5",
+        "n_users": 3000,
+        "mean_a": 0.067265,
+        "mean_b": 0.047745,
+        "diff": 0.01952,
+        "ci95": [
+          0.014086,
+          0.024933
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.408832
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "ndcg@10",
+        "n_users": 3000,
+        "mean_a": 0.073664,
+        "mean_b": 0.050651,
+        "diff": 0.023013,
+        "ci95": [
+          0.018216,
+          0.027628
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.454358
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "ndcg@20",
+        "n_users": 3000,
+        "mean_a": 0.094373,
+        "mean_b": 0.067182,
+        "diff": 0.027191,
+        "ci95": [
+          0.0226,
+          0.031717
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.404743
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "recall@10",
+        "n_users": 3000,
+        "mean_a": 0.079715,
+        "mean_b": 0.054294,
+        "diff": 0.025422,
+        "ci95": [
+          0.020568,
+          0.030285
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.468223
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "precision@10",
+        "n_users": 3000,
+        "mean_a": 0.050167,
+        "mean_b": 0.034333,
+        "diff": 0.015833,
+        "ci95": [
+          0.013032,
+          0.018733
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.461165
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "mrr@10",
+        "n_users": 3000,
+        "mean_a": 0.145546,
+        "mean_b": 0.103031,
+        "diff": 0.042515,
+        "ci95": [
+          0.031942,
+          0.0531
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.412638
+      },
+      {
+        "model": "two-stage ranker (ours)",
+        "vs": "popularity (Day 3 baseline)",
+        "metric": "hit_rate@10",
+        "n_users": 3000,
+        "mean_a": 0.331,
+        "mean_b": 0.238333,
+        "diff": 0.092667,
+        "ci95": [
+          0.075,
+          0.108667
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.388811
+      }
+    ],
+    "diagnostics": {
+      "popularity_top10_slots_released_after_cutoff": 0.1099,
+      "relevant_test_items_released_after_cutoff": 0.0071,
+      "cutoff": "year of the user's last train+val rating"
+    },
+    "checks": {
+      "popularity_equals_day3": null,
+      "popularity_ndcg@10": 0.05065,
+      "day3_popularity_ndcg@10": 0.0502
+    },
+    "latency": {
+      "stage1_features_ms_per_user": 2.64,
+      "ranker_predict_ms_per_user": 0.74,
+      "note": "batches of 500 users, CPU; varies run to run"
+    }
+  },
+  "cold": {
+    "population": "cold_test \u2014 users never in training; history for item statistics = train+val; their onboarding picks = first n liked movies",
+    "n_users": 1000,
+    "policy": {
+      "warm_from": 3,
+      "chosen_on": "pseudo-cold validation (Day 9)"
+    },
+    "rows": [
+      {
+        "model": "popularity",
+        "ndcg@5": 0.02844,
+        "recall@5": 0.01973,
+        "precision@5": 0.0268,
+        "mrr@5": 0.05932,
+        "hit_rate@5": 0.114,
+        "ndcg@10": 0.03045,
+        "recall@10": 0.03255,
+        "precision@10": 0.0222,
+        "mrr@10": 0.06661,
+        "hit_rate@10": 0.171,
+        "ndcg@20": 0.04276,
+        "recall@20": 0.05885,
+        "precision@20": 0.0199,
+        "mrr@20": 0.07182,
+        "hit_rate@20": 0.246,
+        "n_users": 1000,
+        "seeds": 0,
+        "key": "popularity",
+        "serves": ""
+      },
+      {
+        "model": "policy (ours)",
+        "ndcg@5": 0.02844,
+        "recall@5": 0.01973,
+        "precision@5": 0.0268,
+        "mrr@5": 0.05932,
+        "hit_rate@5": 0.114,
+        "ndcg@10": 0.03045,
+        "recall@10": 0.03255,
+        "precision@10": 0.0222,
+        "mrr@10": 0.06661,
+        "hit_rate@10": 0.171,
+        "ndcg@20": 0.04276,
+        "recall@20": 0.05885,
+        "precision@20": 0.0199,
+        "mrr@20": 0.07182,
+        "hit_rate@20": 0.246,
+        "n_users": 1000,
+        "seeds": 0,
+        "key": "policy",
+        "serves": "popularity"
+      },
+      {
+        "model": "popularity",
+        "ndcg@5": 0.0294,
+        "recall@5": 0.02028,
+        "precision@5": 0.0274,
+        "mrr@5": 0.06155,
+        "hit_rate@5": 0.116,
+        "ndcg@10": 0.03138,
+        "recall@10": 0.03331,
+        "precision@10": 0.0227,
+        "mrr@10": 0.06887,
+        "hit_rate@10": 0.173,
+        "ndcg@20": 0.04374,
+        "recall@20": 0.0599,
+        "precision@20": 0.02015,
+        "mrr@20": 0.07411,
+        "hit_rate@20": 0.249,
+        "n_users": 1000,
+        "seeds": 1,
+        "key": "popularity",
+        "config": ""
+      },
+      {
+        "model": "Day 6 semantic rerank",
+        "ndcg@5": 0.02376,
+        "recall@5": 0.0173,
+        "precision@5": 0.0228,
+        "mrr@5": 0.04805,
+        "hit_rate@5": 0.1,
+        "ndcg@10": 0.02813,
+        "recall@10": 0.03221,
+        "precision@10": 0.0217,
+        "mrr@10": 0.05691,
+        "hit_rate@10": 0.167,
+        "ndcg@20": 0.04102,
+        "recall@20": 0.0599,
+        "precision@20": 0.02015,
+        "mrr@20": 0.06265,
+        "hit_rate@20": 0.249,
+        "n_users": 1000,
+        "seeds": 1,
+        "key": "day6",
+        "config": "pool 20, \u03bb 2.0"
+      },
+      {
+        "model": "cold ranker",
+        "ndcg@5": 0.02121,
+        "recall@5": 0.01615,
+        "precision@5": 0.0216,
+        "mrr@5": 0.04167,
+        "hit_rate@5": 0.089,
+        "ndcg@10": 0.0252,
+        "recall@10": 0.02981,
+        "precision@10": 0.0202,
+        "mrr@10": 0.05057,
+        "hit_rate@10": 0.157,
+        "ndcg@20": 0.03728,
+        "recall@20": 0.0569,
+        "precision@20": 0.0183,
+        "mrr@20": 0.05772,
+        "hit_rate@20": 0.259,
+        "n_users": 1000,
+        "seeds": 1,
+        "key": "cold",
+        "config": ""
+      },
+      {
+        "model": "warm ranker",
+        "ndcg@5": 0.02202,
+        "recall@5": 0.01686,
+        "precision@5": 0.0214,
+        "mrr@5": 0.04442,
+        "hit_rate@5": 0.093,
+        "ndcg@10": 0.02677,
+        "recall@10": 0.03133,
+        "precision@10": 0.0203,
+        "mrr@10": 0.05357,
+        "hit_rate@10": 0.159,
+        "ndcg@20": 0.03741,
+        "recall@20": 0.05438,
+        "precision@20": 0.01765,
+        "mrr@20": 0.05994,
+        "hit_rate@20": 0.252,
+        "n_users": 1000,
+        "seeds": 1,
+        "key": "warm",
+        "config": ""
+      },
+      {
+        "model": "policy (ours)",
+        "ndcg@5": 0.02121,
+        "recall@5": 0.01615,
+        "precision@5": 0.0216,
+        "mrr@5": 0.04167,
+        "hit_rate@5": 0.089,
+        "ndcg@10": 0.0252,
+        "recall@10": 0.02981,
+        "precision@10": 0.0202,
+        "mrr@10": 0.05057,
+        "hit_rate@10": 0.157,
+        "ndcg@20": 0.03728,
+        "recall@20": 0.0569,
+        "precision@20": 0.0183,
+        "mrr@20": 0.05772,
+        "hit_rate@20": 0.259,
+        "n_users": 1000,
+        "seeds": 1,
+        "key": "policy",
+        "config": "",
+        "serves": "cold ranker"
+      },
+      {
+        "model": "popularity",
+        "ndcg@5": 0.03043,
+        "recall@5": 0.02074,
+        "precision@5": 0.028,
+        "mrr@5": 0.06415,
+        "hit_rate@5": 0.118,
+        "ndcg@10": 0.03254,
+        "recall@10": 0.03422,
+        "precision@10": 0.0234,
+        "mrr@10": 0.07151,
+        "hit_rate@10": 0.174,
+        "ndcg@20": 0.04478,
+        "recall@20": 0.06052,
+        "precision@20": 0.0204,
+        "mrr@20": 0.07694,
+        "hit_rate@20": 0.252,
+        "n_users": 1000,
+        "seeds": 3,
+        "key": "popularity",
+        "config": ""
+      },
+      {
+        "model": "Day 6 semantic rerank",
+        "ndcg@5": 0.02664,
+        "recall@5": 0.01855,
+        "precision@5": 0.025,
+        "mrr@5": 0.05483,
+        "hit_rate@5": 0.106,
+        "ndcg@10": 0.03133,
+        "recall@10": 0.03562,
+        "precision@10": 0.0241,
+        "mrr@10": 0.0647,
+        "hit_rate@10": 0.18,
+        "ndcg@20": 0.04299,
+        "recall@20": 0.06052,
+        "precision@20": 0.0204,
+        "mrr@20": 0.06975,
+        "hit_rate@20": 0.252,
+        "n_users": 1000,
+        "seeds": 3,
+        "key": "day6",
+        "config": "pool 20, \u03bb 5.0"
+      },
+      {
+        "model": "cold ranker",
+        "ndcg@5": 0.02555,
+        "recall@5": 0.01824,
+        "precision@5": 0.0234,
+        "mrr@5": 0.05465,
+        "hit_rate@5": 0.105,
+        "ndcg@10": 0.03066,
+        "recall@10": 0.0351,
+        "precision@10": 0.0222,
+        "mrr@10": 0.06359,
+        "hit_rate@10": 0.17,
+        "ndcg@20": 0.0431,
+        "recall@20": 0.06122,
+        "precision@20": 0.02015,
+        "mrr@20": 0.07094,
+        "hit_rate@20": 0.276,
+        "n_users": 1000,
+        "seeds": 3,
+        "key": "cold",
+        "config": ""
+      },
+      {
+        "model": "warm ranker",
+        "ndcg@5": 0.02588,
+        "recall@5": 0.01833,
+        "precision@5": 0.0238,
+        "mrr@5": 0.05298,
+        "hit_rate@5": 0.098,
+        "ndcg@10": 0.03133,
+        "recall@10": 0.03514,
+        "precision@10": 0.0231,
+        "mrr@10": 0.06305,
+        "hit_rate@10": 0.172,
+        "ndcg@20": 0.04277,
+        "recall@20": 0.05919,
+        "precision@20": 0.0198,
+        "mrr@20": 0.06964,
+        "hit_rate@20": 0.266,
+        "n_users": 1000,
+        "seeds": 3,
+        "key": "warm",
+        "config": ""
+      },
+      {
+        "model": "policy (ours)",
+        "ndcg@5": 0.02588,
+        "recall@5": 0.01833,
+        "precision@5": 0.0238,
+        "mrr@5": 0.05298,
+        "hit_rate@5": 0.098,
+        "ndcg@10": 0.03133,
+        "recall@10": 0.03514,
+        "precision@10": 0.0231,
+        "mrr@10": 0.06305,
+        "hit_rate@10": 0.172,
+        "ndcg@20": 0.04277,
+        "recall@20": 0.05919,
+        "precision@20": 0.0198,
+        "mrr@20": 0.06964,
+        "hit_rate@20": 0.266,
+        "n_users": 1000,
+        "seeds": 3,
+        "key": "policy",
+        "config": "",
+        "serves": "warm ranker"
+      },
+      {
+        "model": "popularity",
+        "ndcg@5": 0.03143,
+        "recall@5": 0.02135,
+        "precision@5": 0.0288,
+        "mrr@5": 0.06632,
+        "hit_rate@5": 0.121,
+        "ndcg@10": 0.03363,
+        "recall@10": 0.03517,
+        "precision@10": 0.0241,
+        "mrr@10": 0.07368,
+        "hit_rate@10": 0.176,
+        "ndcg@20": 0.0459,
+        "recall@20": 0.06148,
+        "precision@20": 0.02075,
+        "mrr@20": 0.07928,
+        "hit_rate@20": 0.256,
+        "n_users": 1000,
+        "seeds": 5,
+        "key": "popularity",
+        "config": ""
+      },
+      {
+        "model": "Day 6 semantic rerank",
+        "ndcg@5": 0.03034,
+        "recall@5": 0.02083,
+        "precision@5": 0.028,
+        "mrr@5": 0.06303,
+        "hit_rate@5": 0.119,
+        "ndcg@10": 0.03374,
+        "recall@10": 0.03675,
+        "precision@10": 0.0248,
+        "mrr@10": 0.07237,
+        "hit_rate@10": 0.189,
+        "ndcg@20": 0.0454,
+        "recall@20": 0.06148,
+        "precision@20": 0.02075,
+        "mrr@20": 0.07703,
+        "hit_rate@20": 0.256,
+        "n_users": 1000,
+        "seeds": 5,
+        "key": "day6",
+        "config": "pool 20, \u03bb 5.0"
+      },
+      {
+        "model": "cold ranker",
+        "ndcg@5": 0.03008,
+        "recall@5": 0.02216,
+        "precision@5": 0.0292,
+        "mrr@5": 0.06268,
+        "hit_rate@5": 0.133,
+        "ndcg@10": 0.0334,
+        "recall@10": 0.03772,
+        "precision@10": 0.025,
+        "mrr@10": 0.07188,
+        "hit_rate@10": 0.203,
+        "ndcg@20": 0.04627,
+        "recall@20": 0.0659,
+        "precision@20": 0.02155,
+        "mrr@20": 0.07835,
+        "hit_rate@20": 0.298,
+        "n_users": 1000,
+        "seeds": 5,
+        "key": "cold",
+        "config": ""
+      },
+      {
+        "model": "warm ranker",
+        "ndcg@5": 0.03456,
+        "recall@5": 0.02374,
+        "precision@5": 0.0308,
+        "mrr@5": 0.07253,
+        "hit_rate@5": 0.13,
+        "ndcg@10": 0.03909,
+        "recall@10": 0.04274,
+        "precision@10": 0.0277,
+        "mrr@10": 0.0825,
+        "hit_rate@10": 0.204,
+        "ndcg@20": 0.05177,
+        "recall@20": 0.07017,
+        "precision@20": 0.02275,
+        "mrr@20": 0.08889,
+        "hit_rate@20": 0.297,
+        "n_users": 1000,
+        "seeds": 5,
+        "key": "warm",
+        "config": ""
+      },
+      {
+        "model": "policy (ours)",
+        "ndcg@5": 0.03456,
+        "recall@5": 0.02374,
+        "precision@5": 0.0308,
+        "mrr@5": 0.07253,
+        "hit_rate@5": 0.13,
+        "ndcg@10": 0.03909,
+        "recall@10": 0.04274,
+        "precision@10": 0.0277,
+        "mrr@10": 0.0825,
+        "hit_rate@10": 0.204,
+        "ndcg@20": 0.05177,
+        "recall@20": 0.07017,
+        "precision@20": 0.02275,
+        "mrr@20": 0.08889,
+        "hit_rate@20": 0.297,
+        "n_users": 1000,
+        "seeds": 5,
+        "key": "policy",
+        "config": "",
+        "serves": "warm ranker"
+      }
+    ],
+    "significance": [
+      {
+        "model": "cold ranker",
+        "vs": "popularity",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.025197,
+        "mean_b": 0.03138,
+        "diff": -0.006184,
+        "ci95": [
+          -0.011552,
+          -0.001063
+        ],
+        "p_le_0": 0.9945,
+        "rel_change": -0.197058,
+        "seeds": 1
+      },
+      {
+        "model": "cold ranker",
+        "vs": "Day 6 semantic rerank",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.025197,
+        "mean_b": 0.028127,
+        "diff": -0.002931,
+        "ci95": [
+          -0.007381,
+          0.001498
+        ],
+        "p_le_0": 0.9055,
+        "rel_change": -0.104198,
+        "seeds": 1
+      },
+      {
+        "model": "warm ranker",
+        "vs": "popularity",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.026773,
+        "mean_b": 0.03138,
+        "diff": -0.004607,
+        "ci95": [
+          -0.009743,
+          0.000535
+        ],
+        "p_le_0": 0.9575,
+        "rel_change": -0.146813,
+        "seeds": 1
+      },
+      {
+        "model": "warm ranker",
+        "vs": "Day 6 semantic rerank",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.026773,
+        "mean_b": 0.028127,
+        "diff": -0.001354,
+        "ci95": [
+          -0.005277,
+          0.002644
+        ],
+        "p_le_0": 0.7435,
+        "rel_change": -0.048143,
+        "seeds": 1
+      },
+      {
+        "model": "warm ranker",
+        "vs": "cold ranker",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.026773,
+        "mean_b": 0.025197,
+        "diff": 0.001577,
+        "ci95": [
+          -0.002419,
+          0.005821
+        ],
+        "p_le_0": 0.2215,
+        "rel_change": 0.062575,
+        "seeds": 1
+      },
+      {
+        "model": "policy (ours)",
+        "vs": "popularity",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.025197,
+        "mean_b": 0.03138,
+        "diff": -0.006184,
+        "ci95": [
+          -0.011552,
+          -0.001063
+        ],
+        "p_le_0": 0.9945,
+        "rel_change": -0.197058,
+        "seeds": 1
+      },
+      {
+        "model": "policy (ours)",
+        "vs": "Day 6 semantic rerank",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.025197,
+        "mean_b": 0.028127,
+        "diff": -0.002931,
+        "ci95": [
+          -0.007381,
+          0.001498
+        ],
+        "p_le_0": 0.9055,
+        "rel_change": -0.104198,
+        "seeds": 1
+      },
+      {
+        "model": "Day 6 semantic rerank",
+        "vs": "popularity",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.028127,
+        "mean_b": 0.03138,
+        "diff": -0.003253,
+        "ci95": [
+          -0.007184,
+          0.000617
+        ],
+        "p_le_0": 0.958,
+        "rel_change": -0.103661,
+        "seeds": 1
+      },
+      {
+        "model": "cold ranker",
+        "vs": "popularity",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.030664,
+        "mean_b": 0.032541,
+        "diff": -0.001877,
+        "ci95": [
+          -0.00745,
+          0.003382
+        ],
+        "p_le_0": 0.7495,
+        "rel_change": -0.057679,
+        "seeds": 3
+      },
+      {
+        "model": "cold ranker",
+        "vs": "Day 6 semantic rerank",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.030664,
+        "mean_b": 0.031334,
+        "diff": -0.000671,
+        "ci95": [
+          -0.0057,
+          0.004143
+        ],
+        "p_le_0": 0.609,
+        "rel_change": -0.021402,
+        "seeds": 3
+      },
+      {
+        "model": "warm ranker",
+        "vs": "popularity",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.031327,
+        "mean_b": 0.032541,
+        "diff": -0.001214,
+        "ci95": [
+          -0.006787,
+          0.00437
+        ],
+        "p_le_0": 0.661,
+        "rel_change": -0.037302,
+        "seeds": 3
+      },
+      {
+        "model": "warm ranker",
+        "vs": "Day 6 semantic rerank",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.031327,
+        "mean_b": 0.031334,
+        "diff": -8e-06,
+        "ci95": [
+          -0.004766,
+          0.004738
+        ],
+        "p_le_0": 0.4945,
+        "rel_change": -0.000241,
+        "seeds": 3
+      },
+      {
+        "model": "warm ranker",
+        "vs": "cold ranker",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.031327,
+        "mean_b": 0.030664,
+        "diff": 0.000663,
+        "ci95": [
+          -0.004038,
+          0.00555
+        ],
+        "p_le_0": 0.384,
+        "rel_change": 0.021624,
+        "seeds": 3
+      },
+      {
+        "model": "policy (ours)",
+        "vs": "popularity",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.031327,
+        "mean_b": 0.032541,
+        "diff": -0.001214,
+        "ci95": [
+          -0.006787,
+          0.00437
+        ],
+        "p_le_0": 0.661,
+        "rel_change": -0.037302,
+        "seeds": 3
+      },
+      {
+        "model": "policy (ours)",
+        "vs": "Day 6 semantic rerank",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.031327,
+        "mean_b": 0.031334,
+        "diff": -8e-06,
+        "ci95": [
+          -0.004766,
+          0.004738
+        ],
+        "p_le_0": 0.4945,
+        "rel_change": -0.000241,
+        "seeds": 3
+      },
+      {
+        "model": "Day 6 semantic rerank",
+        "vs": "popularity",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.031334,
+        "mean_b": 0.032541,
+        "diff": -0.001206,
+        "ci95": [
+          -0.004385,
+          0.001771
+        ],
+        "p_le_0": 0.795,
+        "rel_change": -0.03707,
+        "seeds": 3
+      },
+      {
+        "model": "cold ranker",
+        "vs": "popularity",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.033404,
+        "mean_b": 0.033629,
+        "diff": -0.000225,
+        "ci95": [
+          -0.006635,
+          0.005608
+        ],
+        "p_le_0": 0.541,
+        "rel_change": -0.006696,
+        "seeds": 5
+      },
+      {
+        "model": "cold ranker",
+        "vs": "Day 6 semantic rerank",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.033404,
+        "mean_b": 0.033742,
+        "diff": -0.000338,
+        "ci95": [
+          -0.006262,
+          0.005405
+        ],
+        "p_le_0": 0.552,
+        "rel_change": -0.010021,
+        "seeds": 5
+      },
+      {
+        "model": "warm ranker",
+        "vs": "popularity",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.039087,
+        "mean_b": 0.033629,
+        "diff": 0.005457,
+        "ci95": [
+          -0.00071,
+          0.011712
+        ],
+        "p_le_0": 0.0445,
+        "rel_change": 0.162279,
+        "seeds": 5
+      },
+      {
+        "model": "warm ranker",
+        "vs": "Day 6 semantic rerank",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.039087,
+        "mean_b": 0.033742,
+        "diff": 0.005344,
+        "ci95": [
+          0.000646,
+          0.010258
+        ],
+        "p_le_0": 0.014,
+        "rel_change": 0.158388,
+        "seeds": 5
+      },
+      {
+        "model": "warm ranker",
+        "vs": "cold ranker",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.039087,
+        "mean_b": 0.033404,
+        "diff": 0.005683,
+        "ci95": [
+          0.000256,
+          0.011517
+        ],
+        "p_le_0": 0.018,
+        "rel_change": 0.170114,
+        "seeds": 5
+      },
+      {
+        "model": "policy (ours)",
+        "vs": "popularity",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.039087,
+        "mean_b": 0.033629,
+        "diff": 0.005457,
+        "ci95": [
+          -0.00071,
+          0.011712
+        ],
+        "p_le_0": 0.0445,
+        "rel_change": 0.162279,
+        "seeds": 5
+      },
+      {
+        "model": "policy (ours)",
+        "vs": "Day 6 semantic rerank",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.039087,
+        "mean_b": 0.033742,
+        "diff": 0.005344,
+        "ci95": [
+          0.000646,
+          0.010258
+        ],
+        "p_le_0": 0.014,
+        "rel_change": 0.158388,
+        "seeds": 5
+      },
+      {
+        "model": "Day 6 semantic rerank",
+        "vs": "popularity",
+        "metric": "ndcg@10",
+        "n_users": 1000,
+        "mean_a": 0.033742,
+        "mean_b": 0.033629,
+        "diff": 0.000113,
+        "ci95": [
+          -0.00329,
+          0.003446
+        ],
+        "p_le_0": 0.488,
+        "rel_change": 0.003359,
+        "seeds": 5
+      }
+    ],
+    "checks": {}
+  },
+  "shap": {
+    "n_users": 200,
+    "rows_all": 98464,
+    "rows_top10": 2000,
+    "method": "LightGBM pred_contrib (exact TreeSHAP, raw lambdarank score)",
+    "additivity_max_error": 6.217248937900877e-15,
+    "all": [
+      {
+        "feature": "pop_gap",
+        "group": "user-item metadata",
+        "mean_abs_shap": 0.39639,
+        "share": 0.2067,
+        "mean_shap": 0.057,
+        "gain_share_day9": 0.1104
+      },
+      {
+        "feature": "year_gap",
+        "group": "user-item metadata",
+        "mean_abs_shap": 0.32529,
+        "share": 0.1696,
+        "mean_shap": -7e-05,
+        "gain_share_day9": 0.1042
+      },
+      {
+        "feature": "cos_longterm",
+        "group": "semantic (embeddings / FAISS)",
+        "mean_abs_shap": 0.16328,
+        "share": 0.0851,
+        "mean_shap": -0.03611,
+        "gain_share_day9": 0.1072
+      },
+      {
+        "feature": "genre_affinity",
+        "group": "user-item metadata",
+        "mean_abs_shap": 0.15305,
+        "share": 0.0798,
+        "mean_shap": 0.008,
+        "gain_share_day9": 0.0493
+      },
+      {
+        "feature": "pop_rank",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.14123,
+        "share": 0.0736,
+        "mean_shap": 0.00668,
+        "gain_share_day9": 0.0986
+      },
+      {
+        "feature": "cos_profile",
+        "group": "semantic (embeddings / FAISS)",
+        "mean_abs_shap": 0.13098,
+        "share": 0.0683,
+        "mean_shap": -0.03756,
+        "gain_share_day9": 0.091
+      },
+      {
+        "feature": "user_n_ratings_log",
+        "group": "user",
+        "mean_abs_shap": 0.08744,
+        "share": 0.0456,
+        "mean_shap": -0.00571,
+        "gain_share_day9": 0.0563
+      },
+      {
+        "feature": "item_year",
+        "group": "item metadata",
+        "mean_abs_shap": 0.08356,
+        "share": 0.0436,
+        "mean_shap": 0.01351,
+        "gain_share_day9": 0.0472
+      },
+      {
+        "feature": "max_cos_liked",
+        "group": "semantic (embeddings / FAISS)",
+        "mean_abs_shap": 0.08185,
+        "share": 0.0427,
+        "mean_shap": 0.00143,
+        "gain_share_day9": 0.0643
+      },
+      {
+        "feature": "item_liked_log",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.07944,
+        "share": 0.0414,
+        "mean_shap": 0.02414,
+        "gain_share_day9": 0.0455
+      },
+      {
+        "feature": "item_recent_log",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.07937,
+        "share": 0.0414,
+        "mean_shap": -0.00522,
+        "gain_share_day9": 0.038
+      },
+      {
+        "feature": "item_trend",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.04342,
+        "share": 0.0226,
+        "mean_shap": 0.00601,
+        "gain_share_day9": 0.0444
+      },
+      {
+        "feature": "item_runtime",
+        "group": "item metadata",
+        "mean_abs_shap": 0.03636,
+        "share": 0.019,
+        "mean_shap": 0.00267,
+        "gain_share_day9": 0.0252
+      },
+      {
+        "feature": "item_count_log",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.02743,
+        "share": 0.0143,
+        "mean_shap": 0.00736,
+        "gain_share_day9": 0.0254
+      },
+      {
+        "feature": "item_liked_share",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.0236,
+        "share": 0.0123,
+        "mean_shap": -0.00806,
+        "gain_share_day9": 0.0138
+      },
+      {
+        "feature": "user_liked_share",
+        "group": "user",
+        "mean_abs_shap": 0.01997,
+        "share": 0.0104,
+        "mean_shap": 0.00041,
+        "gain_share_day9": 0.0267
+      },
+      {
+        "feature": "user_mean_rating",
+        "group": "user",
+        "mean_abs_shap": 0.01911,
+        "share": 0.01,
+        "mean_shap": 0.00113,
+        "gain_share_day9": 0.0212
+      },
+      {
+        "feature": "item_avg_rating",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.01437,
+        "share": 0.0075,
+        "mean_shap": 0.00307,
+        "gain_share_day9": 0.0157
+      },
+      {
+        "feature": "faiss_rank",
+        "group": "semantic (embeddings / FAISS)",
+        "mean_abs_shap": 0.0117,
+        "share": 0.0061,
+        "mean_shap": -0.00202,
+        "gain_share_day9": 0.0156
+      },
+      {
+        "feature": "in_pop",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.0,
+        "share": 0.0,
+        "mean_shap": 0.0,
+        "gain_share_day9": 0.0
+      },
+      {
+        "feature": "in_faiss",
+        "group": "semantic (embeddings / FAISS)",
+        "mean_abs_shap": 0.0,
+        "share": 0.0,
+        "mean_shap": 0.0,
+        "gain_share_day9": 0.0
+      }
+    ],
+    "top10": [
+      {
+        "feature": "pop_gap",
+        "group": "user-item metadata",
+        "mean_abs_shap": 0.45571,
+        "share": 0.1752,
+        "mean_shap": 0.45477
+      },
+      {
+        "feature": "pop_rank",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.40873,
+        "share": 0.1572,
+        "mean_shap": 0.40064
+      },
+      {
+        "feature": "year_gap",
+        "group": "user-item metadata",
+        "mean_abs_shap": 0.39089,
+        "share": 0.1503,
+        "mean_shap": 0.34261
+      },
+      {
+        "feature": "cos_longterm",
+        "group": "semantic (embeddings / FAISS)",
+        "mean_abs_shap": 0.20865,
+        "share": 0.0802,
+        "mean_shap": 0.19998
+      },
+      {
+        "feature": "item_liked_log",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.18167,
+        "share": 0.0699,
+        "mean_shap": 0.17688
+      },
+      {
+        "feature": "cos_profile",
+        "group": "semantic (embeddings / FAISS)",
+        "mean_abs_shap": 0.17643,
+        "share": 0.0678,
+        "mean_shap": 0.15081
+      },
+      {
+        "feature": "genre_affinity",
+        "group": "user-item metadata",
+        "mean_abs_shap": 0.14472,
+        "share": 0.0557,
+        "mean_shap": 0.08429
+      },
+      {
+        "feature": "max_cos_liked",
+        "group": "semantic (embeddings / FAISS)",
+        "mean_abs_shap": 0.13617,
+        "share": 0.0524,
+        "mean_shap": 0.11451
+      },
+      {
+        "feature": "item_recent_log",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.13381,
+        "share": 0.0515,
+        "mean_shap": 0.11863
+      },
+      {
+        "feature": "item_year",
+        "group": "item metadata",
+        "mean_abs_shap": 0.07128,
+        "share": 0.0274,
+        "mean_shap": 0.03355
+      },
+      {
+        "feature": "item_count_log",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.05899,
+        "share": 0.0227,
+        "mean_shap": 0.05627
+      },
+      {
+        "feature": "user_n_ratings_log",
+        "group": "user",
+        "mean_abs_shap": 0.05276,
+        "share": 0.0203,
+        "mean_shap": 0.02479
+      },
+      {
+        "feature": "item_trend",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.04536,
+        "share": 0.0174,
+        "mean_shap": 0.03556
+      },
+      {
+        "feature": "item_runtime",
+        "group": "item metadata",
+        "mean_abs_shap": 0.03224,
+        "share": 0.0124,
+        "mean_shap": 0.00609
+      },
+      {
+        "feature": "item_liked_share",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.02792,
+        "share": 0.0107,
+        "mean_shap": 0.0212
+      },
+      {
+        "feature": "user_mean_rating",
+        "group": "user",
+        "mean_abs_shap": 0.02303,
+        "share": 0.0089,
+        "mean_shap": 0.0063
+      },
+      {
+        "feature": "user_liked_share",
+        "group": "user",
+        "mean_abs_shap": 0.02024,
+        "share": 0.0078,
+        "mean_shap": 0.00507
+      },
+      {
+        "feature": "faiss_rank",
+        "group": "semantic (embeddings / FAISS)",
+        "mean_abs_shap": 0.01875,
+        "share": 0.0072,
+        "mean_shap": 0.00979
+      },
+      {
+        "feature": "item_avg_rating",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.01312,
+        "share": 0.005,
+        "mean_shap": 0.00512
+      },
+      {
+        "feature": "in_pop",
+        "group": "item popularity & quality",
+        "mean_abs_shap": 0.0,
+        "share": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "in_faiss",
+        "group": "semantic (embeddings / FAISS)",
+        "mean_abs_shap": 0.0,
+        "share": 0.0,
+        "mean_shap": 0.0
+      }
+    ],
+    "groups_all": [
+      {
+        "group": "user-item metadata",
+        "share": 0.4561
+      },
+      {
+        "group": "item popularity & quality",
+        "share": 0.2131
+      },
+      {
+        "group": "semantic (embeddings / FAISS)",
+        "share": 0.2022
+      },
+      {
+        "group": "user",
+        "share": 0.066
+      },
+      {
+        "group": "item metadata",
+        "share": 0.0626
+      }
+    ],
+    "groups_top10": [
+      {
+        "group": "user-item metadata",
+        "share": 0.3812
+      },
+      {
+        "group": "item popularity & quality",
+        "share": 0.3344
+      },
+      {
+        "group": "semantic (embeddings / FAISS)",
+        "share": 0.2076
+      },
+      {
+        "group": "item metadata",
+        "share": 0.0398
+      },
+      {
+        "group": "user",
+        "share": 0.037
+      }
+    ],
+    "examples": [
+      {
+        "userId": 5940,
+        "n_ratings": 56,
+        "recent_liked": [
+          "Star Wars: Episode V - The Empire Strikes Back (1980)",
+          "Rush Hour (1998)",
+          "James and the Giant Peach (1996)",
+          "The Lion King (1994)",
+          "Mulan (1998)"
+        ],
+        "top5": [
+          {
+            "movie": "Star Wars: Episode VI - Return of the Jedi (1983)",
+            "score": 1.339,
+            "liked_in_test": true,
+            "reasons": [
+              {
+                "feature": "max_cos_liked",
+                "value": 0.675,
+                "shap": 0.7352
+              },
+              {
+                "feature": "pop_gap",
+                "value": 2.016,
+                "shap": 0.5315
+              },
+              {
+                "feature": "pop_rank",
+                "value": 14.0,
+                "shap": 0.4691
+              }
+            ]
+          },
+          {
+            "movie": "Star Wars: Episode IV - A New Hope (1977)",
+            "score": 0.956,
+            "liked_in_test": false,
+            "reasons": [
+              {
+                "feature": "pop_gap",
+                "value": 2.314,
+                "shap": 0.5766
+              },
+              {
+                "feature": "pop_rank",
+                "value": 4.0,
+                "shap": 0.5716
+              },
+              {
+                "feature": "max_cos_liked",
+                "value": 0.621,
+                "shap": 0.5704
+              }
+            ]
+          },
+          {
+            "movie": "Back to the Future (1985)",
+            "score": 0.735,
+            "liked_in_test": false,
+            "reasons": [
+              {
+                "feature": "year_gap",
+                "value": 1.407,
+                "shap": 0.5518
+              },
+              {
+                "feature": "pop_rank",
+                "value": 20.0,
+                "shap": 0.5057
+              },
+              {
+                "feature": "pop_gap",
+                "value": 1.903,
+                "shap": 0.4625
+              }
+            ]
+          },
+          {
+            "movie": "Robin Hood (1973)",
+            "score": 0.684,
+            "liked_in_test": false,
+            "reasons": [
+              {
+                "feature": "pop_gap",
+                "value": -0.516,
+                "shap": 0.6714
+              },
+              {
+                "feature": "cos_profile",
+                "value": 0.373,
+                "shap": 0.3355
+              },
+              {
+                "feature": "cos_longterm",
+                "value": 0.391,
+                "shap": 0.2937
+              }
+            ]
+          },
+          {
+            "movie": "Willy Wonka & the Chocolate Factory (1971)",
+            "score": 0.601,
+            "liked_in_test": false,
+            "reasons": [
+              {
+                "feature": "pop_gap",
+                "value": 1.044,
+                "shap": 0.6557
+              },
+              {
+                "feature": "item_year",
+                "value": 1971.0,
+                "shap": 0.4739
+              },
+              {
+                "feature": "cos_longterm",
+                "value": 0.28,
+                "shap": 0.2823
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "userId": 14539,
+        "n_ratings": 18,
+        "recent_liked": [
+          "The Avengers (2012)",
+          "Toy Story 3 (2010)",
+          "Monty Python and the Holy Grail (1975)",
+          "Toy Story (1995)",
+          "Saving Private Ryan (1998)"
+        ],
+        "top5": [
+          {
+            "movie": "Toy Story 2 (1999)",
+            "score": 1.636,
+            "liked_in_test": false,
+            "reasons": [
+              {
+                "feature": "pop_gap",
+                "value": -0.494,
+                "shap": 0.5727
+              },
+              {
+                "feature": "cos_profile",
+                "value": 0.607,
+                "shap": 0.5564
+              },
+              {
+                "feature": "max_cos_liked",
+                "value": 0.701,
+                "shap": 0.5079
+              }
+            ]
+          },
+          {
+            "movie": "Monsters, Inc. (2001)",
+            "score": 1.553,
+            "liked_in_test": false,
+            "reasons": [
+              {
+                "feature": "year_gap",
+                "value": 0.267,
+                "shap": 0.8062
+              },
+              {
+                "feature": "pop_gap",
+                "value": -0.123,
+                "shap": 0.5079
+              },
+              {
+                "feature": "pop_rank",
+                "value": 44.0,
+                "shap": 0.3744
+              }
+            ]
+          },
+          {
+            "movie": "Gladiator (2000)",
+            "score": 1.441,
+            "liked_in_test": true,
+            "reasons": [
+              {
+                "feature": "year_gap",
+                "value": 0.733,
+                "shap": 0.6427
+              },
+              {
+                "feature": "pop_rank",
+                "value": 21.0,
+                "shap": 0.5998
+              },
+              {
+                "feature": "pop_gap",
+                "value": 0.184,
+                "shap": 0.5407
+              }
+            ]
+          },
+          {
+            "movie": "Shrek (2001)",
+            "score": 1.357,
+            "liked_in_test": false,
+            "reasons": [
+              {
+                "feature": "year_gap",
+                "value": 0.267,
+                "shap": 0.6167
+              },
+              {
+                "feature": "pop_gap",
+                "value": -0.008,
+                "shap": 0.5817
+              },
+              {
+                "feature": "pop_rank",
+                "value": 32.0,
+                "shap": 0.3276
+              }
+            ]
+          },
+          {
+            "movie": "Star Wars: Episode V - The Empire Strikes Back (1980)",
+            "score": 1.285,
+            "liked_in_test": false,
+            "reasons": [
+              {
+                "feature": "max_cos_liked",
+                "value": 0.675,
+                "shap": 0.781
+              },
+              {
+                "feature": "pop_rank",
+                "value": 7.0,
+                "shap": 0.5864
+              },
+              {
+                "feature": "pop_gap",
+                "value": 0.549,
+                "shap": 0.4991
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "seconds_last_run": 105.0
+}

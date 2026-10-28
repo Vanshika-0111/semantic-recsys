@@ -56,6 +56,7 @@ from recsys.coldstart import first_liked, pool_rerank_topk, popularity_prior  # 
 from recsys.experiment import (COLS, SHOW, TCOLS, chosen_settings, eval_users, load_catalog,  # noqa: E402
                                load_item_vectors, log, md_table, only, open_results, read_results,
                                row, rows_of, save_results, split_fingerprint)
+from recsys.evaluation import project_file  # noqa: E402
 from recsys.features import FEATURE_NAMES, attach_labels  # noqa: E402
 from recsys.metrics import PAD, evaluate, paired_bootstrap  # noqa: E402
 from recsys.ranker import (RankData, build_two_stage, importance, predict, split_users,  # noqa: E402
@@ -292,7 +293,7 @@ def stage_train(ctx: Context, results: dict) -> None:
     results["selected"] = {
         "candidates": winner, "pop": n, "faiss": m, "faiss_feature": f, "label": ctx.label(winner),
         "config": w["cfg"], "best_iter": w["info"]["best_iter"], "val_ndcg@10": round(w["ndcg@10"], 5),
-        "features": list(FEATURE_NAMES), "model_file": str(ctx.path(MODEL_FILE).relative_to(config.ROOT)),
+        "features": list(FEATURE_NAMES), "model_file": ctx.path(MODEL_FILE).relative_to(config.ROOT).as_posix(),
         "rule": "highest ranker-valid NDCG@10 over (candidate set x grid); tie -> union"}
     pop10 = rows[0]["ndcg@10"]
     log(f"selected: {ctx.label(winner)}, {cfg_name(w['cfg'])}, {w['info']['best_iter']} trees: "
@@ -313,7 +314,7 @@ def stage_cold(ctx: Context, results: dict) -> None:
     sel = results.get("selected")
     if not sel:
         raise SystemExit("no selected ranker — run the 'train' stage first")
-    warm = lgb.Booster(model_file=str(config.ROOT / sel["model_file"]))
+    warm = lgb.Booster(model_file=str(project_file(sel["model_file"])))
     train = S.load_view("train", config.SPLIT_DIR, columns=TCOLS)
     val = S.load_view("val", config.SPLIT_DIR, columns=COLS)
     cand = eval_users(val, None, config.SEED)
@@ -414,7 +415,7 @@ def stage_cold(ctx: Context, results: dict) -> None:
                        "n_train_users": int(len(tr_u)), "n_valid_users": int(len(va_u)),
                        "config": sel["config"], "best_iter": info["best_iter"], "rows": rows,
                        "significance": sig, "importance": imp,
-                       "model_file": str(ctx.path(COLD_MODEL_FILE).relative_to(config.ROOT))}
+                       "model_file": ctx.path(COLD_MODEL_FILE).relative_to(config.ROOT).as_posix()}
 
 
 # --------------------------------------------------------------------------- #

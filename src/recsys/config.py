@@ -144,3 +144,12 @@ RANKER_EARLY_STOP = 50                       # stop when valid NDCG@10 hasn't im
 # their first n liked train movies), n drawn from these per training user; evaluated at each n.
 COLD_RANKER_USERS = 20000
 COLD_RANKER_SEEDS = (1, 3, 5)
+
+# --- Day 10: final test, ablations, real cold users, SHAP ---
+# Nothing is tuned on test. The ablation rankers reuse the Day 9 user split and the Day 9 config
+# (graded labels, 127 leaves): only the feature list / candidate set changes.
+# Cold-start policy chosen on pseudo-cold validation (Day 9): 0 picks -> popularity,
+# fewer than 3 -> cold ranker, 3 or more -> the warm ranker as is.
+COLD_POLICY_WARM_FROM = 3
+SHAP_USERS = 1000                            # warm test users whose candidates get SHAP values
+RELEASE_POOL = 2000                          # release-aware popularity: search the top-2000 first
