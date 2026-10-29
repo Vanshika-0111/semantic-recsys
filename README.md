@@ -45,6 +45,7 @@ A step counts as done only if its results file matches the current split *and* i
 | ranker | `run_ranker.py` | Day 9: LightGBM LambdaMART ranker on validation (+ cold mode) |
 | final | `run_final.py` | Day 10: final test table, ablations, real cold users, SHAP |
 | diversity | `run_diversity.py` | Day 11: MMR diversity re-ranking + "Because you liked X" explanations |
+| serving | `run_serving.py` | Day 12: API bundle, golden check (API == evaluation code), p50/p95 latency |
 | summary | `summarize_results.py` | one page of headline numbers from all days |
 
 Every script also runs on its own and has `--smoke` and `--stages …`.
@@ -53,7 +54,8 @@ Every script also runs on its own and has `--smoke` and `--stages …`.
 
 ```
 src/recsys/      library code: config, data, split, metrics, text, baselines, embeddings, ann,
-                 candidates, features, ranker, coldstart, evaluation, experiment (shared script plumbing), summary
+                 candidates, features, ranker, coldstart, evaluation, diversity, explain,
+                 serving (bundle + Engine), api (FastAPI), experiment (shared script plumbing), summary
 scripts/         runnable pipeline steps + run_pipeline.py
 tests/           unit tests (expected values hand-computed in comments)
 reports/         EDA summary, figures, results/ (json + markdown per day, summary.md, manifest)
@@ -221,6 +223,33 @@ Test is used once, here; every setting was chosen on validation.
   **Faithfulness check:** remove X from the history and re-score, vs removing a random other recent like.
 - Results: `reports/results/day11_diversity.md`, `day11_examples.md`; chart
   `reports/figures/day11_mmr_tradeoff.png`.
+
+## API (Day 12)
+
+```bash
+python scripts/run_serving.py              # validation check, bundle -> data/serving, golden check, latency
+uvicorn recsys.api:app --port 8000         # then open http://localhost:8000/docs
+```
+
+| endpoint | what it does |
+|---|---|
+| `GET /recommend/{user_id}` | a demo user (1,000 warm test users ship in the bundle): popular 400 ∪ FAISS 100 → 21 features → LambdaMART → genre MMR λ 0.7 → reason + "Because you liked X" |
+| `POST /recommend/history` | any user's own ratings (oldest first) |
+| `POST /recommend/cold-start` | onboarding: 0 picks → popularity, 1–2 → cold ranker, ≥ 3 → warm ranker (Day 10 policy); text only → explore mode (semantic search over the 1,000 most-liked movies) |
+| `GET /movies/search`, `/movies/{id}`, `/movies/{id}/similar`, `/users/demo`, `/users/{id}/history`, `/health` | helpers for the UI |
+
+- **Bundle, not ratings:** `run_serving.py` (stage `bundle`) saves everything the recommender needs that
+  comes from ratings — item statistics, popularity, the cold-start prior — plus item vectors, both
+  rankers and the validated settings (~50 MB). The API starts in seconds and never touches the 31M ratings.
+- **Golden check:** the API engine, built only from the bundle, returns the same top-10 as the code that
+  produced the evaluation numbers, for warm users (with and without MMR) and real cold users at 1/3/5 picks.
+- **Release filter:** Day 10 saw "ranker + release filter" +2.8% on test but it had never been checked on
+  validation; `run_serving.py` checks it on validation with a rule fixed beforehand and the bundle
+  stores the decision.
+- **Latency:** p50/p95/p99 per endpoint, one request at a time (in-process, or `--url` for a running
+  server / container), plus a per-step breakdown. Results: `reports/results/day12_serving.md`.
+- **Docker:** `docker build -t semantic-recsys-api .` then `docker run -p 8000:8000 semantic-recsys-api`
+  (needs `data/serving` built first; `--build-arg WITH_TEXT=false` for a small image without free-text search).
 
 ## Data attribution
 

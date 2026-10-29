@@ -167,3 +167,16 @@ MMR_MAX_NDCG_LOSS = 0.02                     # accuracy budget for diversity: lo
 EXPLAIN_MIN_COS = 0.3                        # cite "Because you liked X" only from this cosine
 EXPLAIN_USERS = 500                          # test users for explanation stats + counterfactuals
 EXAMPLE_USERS = 3                            # worked examples in day11_examples.md
+
+# --- Day 12: serving (FastAPI) ---
+# The API loads a compact bundle (no ratings) built from train+val — the history Day 10 tested with.
+SERVING_DIR = DATA_DIR / "serving"           # bundle.json, arrays.npz, rankers, demo users (git-ignored)
+SERVE_DEMO_USERS = 1000                      # warm test users whose history ships with the demo
+SERVE_CHECK_USERS = 200                      # users per golden check (Engine == batch evaluation code)
+SERVE_PICK_RATING = 5.0                      # an onboarding pick without a rating counts as 5★ (Day 6)
+SERVE_LATENCY_REQUESTS = 300                 # sequential requests per endpoint type (after warm-up)
+SERVE_LATENCY_WARMUP = 10
+# Release filter for demo users (hide movies released after the user's last rating year). Rule
+# written BEFORE the validation run: switch it on only if, on the Day 9 ranker-valid users, the
+# ranker + filter beats the ranker on NDCG@10 with a paired-bootstrap 95% CI above 0.
+SERVE_RELEASE_RULE = "on iff ranker+filter > ranker on val NDCG@10, bootstrap CI lower bound > 0"

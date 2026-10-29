@@ -164,7 +164,8 @@ def test_pipeline_plan(monkeypatch):
     plan = {s.name: a for s, a in P.plan(Args(force=True))}
     assert plan["baselines"] == "run" and plan["split"] == "verify"
     # --from starts in the middle
-    assert [s.name for s, _ in P.plan(Args(from_step="retrieval"))] == ["retrieval", "coldstart", "candidates", "ranker", "final", "diversity"]
+    assert [s.name for s, _ in P.plan(Args(from_step="retrieval"))] == ["retrieval", "coldstart", "candidates", "ranker", "final", "diversity",
+                                                                     "serving"]
     # --smoke never downloads data: a missing data step is reported, not run
     done.discard("prepare")
     plan = {s.name: a for s, a in P.plan(Args(smoke=True))}

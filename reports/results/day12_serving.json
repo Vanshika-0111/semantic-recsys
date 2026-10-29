@@ -1,0 +1,432 @@
+{
+  "split_fingerprint": "a99079d4a40ab6808529cf3166bbc02268adc9709f06d24378ee322587988152",
+  "release": {
+    "split": "val (history = train, labels = val), Day 9 ranker-valid users",
+    "n_users": 5000,
+    "cutoff": "year of the user's last train rating",
+    "rule": "on iff ranker+filter > ranker on val NDCG@10, bootstrap CI lower bound > 0",
+    "rows": [
+      {
+        "model": "ranker",
+        "ndcg@5": 0.0833,
+        "recall@5": 0.06099,
+        "precision@5": 0.0718,
+        "mrr@5": 0.16204,
+        "hit_rate@5": 0.2726,
+        "ndcg@10": 0.09089,
+        "recall@10": 0.10014,
+        "precision@10": 0.0591,
+        "mrr@10": 0.17651,
+        "hit_rate@10": 0.3818,
+        "ndcg@20": 0.11452,
+        "recall@20": 0.15283,
+        "precision@20": 0.04584,
+        "mrr@20": 0.18408,
+        "hit_rate@20": 0.493,
+        "n_users": 5000,
+        "late_share@10": 0.0453
+      },
+      {
+        "model": "ranker + release filter",
+        "ndcg@5": 0.08544,
+        "recall@5": 0.06293,
+        "precision@5": 0.0736,
+        "mrr@5": 0.16564,
+        "hit_rate@5": 0.2788,
+        "ndcg@10": 0.09303,
+        "recall@10": 0.10248,
+        "precision@10": 0.06036,
+        "mrr@10": 0.18029,
+        "hit_rate@10": 0.3896,
+        "ndcg@20": 0.11777,
+        "recall@20": 0.15772,
+        "precision@20": 0.04719,
+        "mrr@20": 0.1881,
+        "hit_rate@20": 0.5044,
+        "n_users": 5000,
+        "late_share@10": 0.0
+      },
+      {
+        "model": "ranker + MMR (served)",
+        "ndcg@5": 0.08267,
+        "recall@5": 0.06074,
+        "precision@5": 0.07212,
+        "mrr@5": 0.16171,
+        "hit_rate@5": 0.2752,
+        "ndcg@10": 0.0892,
+        "recall@10": 0.09811,
+        "precision@10": 0.05804,
+        "mrr@10": 0.1751,
+        "hit_rate@10": 0.3764,
+        "ndcg@20": 0.11321,
+        "recall@20": 0.15153,
+        "precision@20": 0.04529,
+        "mrr@20": 0.18308,
+        "hit_rate@20": 0.4902,
+        "n_users": 5000,
+        "late_share@10": 0.0431
+      },
+      {
+        "model": "ranker + MMR + release filter",
+        "ndcg@5": 0.08418,
+        "recall@5": 0.06234,
+        "precision@5": 0.07312,
+        "mrr@5": 0.16446,
+        "hit_rate@5": 0.2792,
+        "ndcg@10": 0.09167,
+        "recall@10": 0.10149,
+        "precision@10": 0.05982,
+        "mrr@10": 0.17847,
+        "hit_rate@10": 0.3848,
+        "ndcg@20": 0.11616,
+        "recall@20": 0.15594,
+        "precision@20": 0.04656,
+        "mrr@20": 0.18656,
+        "hit_rate@20": 0.5004,
+        "n_users": 5000,
+        "late_share@10": 0.0
+      }
+    ],
+    "significance": {
+      "filter_vs_ranker": {
+        "mean_a": 0.09303,
+        "mean_b": 0.09089,
+        "diff": 0.00213,
+        "ci95": [
+          0.00166,
+          0.0026
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.02348
+      },
+      "filter_vs_served_mmr": {
+        "mean_a": 0.09167,
+        "mean_b": 0.0892,
+        "diff": 0.00247,
+        "ci95": [
+          0.00197,
+          0.00302
+        ],
+        "p_le_0": 0.0,
+        "rel_change": 0.02774
+      }
+    },
+    "checks": {
+      "ranker_equals_day9": true,
+      "day9_val_ndcg@10": 0.09089,
+      "mmr_equals_day11": true,
+      "day11_val_ndcg@10": 0.0892
+    },
+    "decision": {
+      "enabled": true
+    }
+  },
+  "seconds_last_run": {
+    "release": 32.4,
+    "bundle": 12.6,
+    "check": 104.6,
+    "latency": 83.2
+  },
+  "bundle": {
+    "dir": "data/serving",
+    "size_mb": 46.9,
+    "files_mb": {
+      "arrays.npz": 37.82,
+      "bundle.json": 0.0,
+      "cold_ranker.txt": 0.85,
+      "demo_history.parquet": 1.12,
+      "demo_truth.parquet": 0.04,
+      "items.parquet": 5.96,
+      "warm_ranker.txt": 1.13
+    },
+    "n_items": 23109,
+    "n_demo_users": 1000,
+    "settings": {
+      "policy": {
+        "warm_from": 3,
+        "chosen_on": "pseudo-cold validation (Day 9)"
+      },
+      "mmr": {
+        "space": "genre",
+        "lambda": 0.7,
+        "pool": 50
+      },
+      "release_filter": {
+        "enabled": true,
+        "rule": "on iff ranker+filter > ranker on val NDCG@10, bootstrap CI lower bound > 0",
+        "applies_to": "demo users only (they replay the past); live users: no cutoff"
+      },
+      "explain": {
+        "min_cos": 0.3
+      },
+      "explore": {
+        "pool": 1000,
+        "lambda": 0.3
+      },
+      "encoder": {
+        "key": "bge-small",
+        "hf_name": "BAAI/bge-small-en-v1.5",
+        "query_prefix": "Represent this sentence for searching relevant passages: "
+      },
+      "pick_rating": 5.0,
+      "poster_base": "https://image.tmdb.org/t/p/w342"
+    },
+    "history": "train+val (28,932,244 ratings) \u2014 the Day 10 test setting",
+    "git_commit": "8e192bfb37b62b94d43e3951b1df83a2b1a8e827"
+  },
+  "check": {
+    "warm": {
+      "identical_ranker": 200,
+      "identical_mmr": 200,
+      "n": 200
+    },
+    "cold": {
+      "picks_1": {
+        "identical": 200,
+        "n": 200,
+        "model": "cold ranker"
+      },
+      "picks_3": {
+        "identical": 200,
+        "n": 200,
+        "model": "warm ranker"
+      },
+      "picks_5": {
+        "identical": 200,
+        "n": 200,
+        "model": "warm ranker"
+      }
+    },
+    "demo_sanity": [
+      {
+        "model": "popularity",
+        "ndcg@10": 0.05539,
+        "recall@10": 0.05822,
+        "n_users": 1000
+      },
+      {
+        "model": "ranker",
+        "ndcg@10": 0.08919,
+        "recall@10": 0.09376,
+        "n_users": 1000
+      },
+      {
+        "model": "served (MMR + release filter)",
+        "ndcg@10": 0.09123,
+        "recall@10": 0.09803,
+        "n_users": 1000
+      }
+    ],
+    "seconds": 103.5,
+    "all_identical": true
+  },
+  "latency": {
+    "requests_per_endpoint": 300,
+    "warmup": 10,
+    "engine_load_s": 0.71,
+    "rss_after_load_mb": 379.4,
+    "rss_before_load_mb": 143.0,
+    "engine_memory_mb": 236.4,
+    "target": "in-process (FastAPI TestClient: routing + validation + JSON, no network)",
+    "encoder_first_request_s": 67.94,
+    "rows": [
+      {
+        "endpoint": "warm user \u2014 served (ranker + MMR + explanations)",
+        "n": 300,
+        "p50": 88.9,
+        "p95": 103.71,
+        "p99": 109.79,
+        "mean": 88.09,
+        "max": 137.98,
+        "engine_p50": 77.24
+      },
+      {
+        "endpoint": "warm user \u2014 ranker only",
+        "n": 300,
+        "p50": 43.24,
+        "p95": 50.87,
+        "p99": 55.64,
+        "mean": 42.5,
+        "max": 165.66,
+        "engine_p50": 30.34
+      },
+      {
+        "endpoint": "cold start \u2014 0 picks (popularity)",
+        "n": 300,
+        "p50": 14.39,
+        "p95": 19.74,
+        "p99": 24.27,
+        "mean": 14.79,
+        "max": 26.17,
+        "engine_p50": 3.13
+      },
+      {
+        "endpoint": "cold start \u2014 1 pick (cold ranker)",
+        "n": 300,
+        "p50": 76.67,
+        "p95": 102.22,
+        "p99": 159.14,
+        "mean": 78.28,
+        "max": 196.38,
+        "engine_p50": 63.44
+      },
+      {
+        "endpoint": "cold start \u2014 3 picks (warm ranker)",
+        "n": 300,
+        "p50": 88.5,
+        "p95": 105.7,
+        "p99": 115.81,
+        "mean": 87.86,
+        "max": 136.74,
+        "engine_p50": 75.28
+      },
+      {
+        "endpoint": "cold start \u2014 5 picks (warm ranker)",
+        "n": 300,
+        "p50": 91.71,
+        "p95": 102.22,
+        "p99": 127.35,
+        "mean": 90.21,
+        "max": 160.95,
+        "engine_p50": 77.12
+      },
+      {
+        "endpoint": "free text \u2014 explore mode",
+        "n": 300,
+        "p50": 93.02,
+        "p95": 110.55,
+        "p99": 132.37,
+        "mean": 92.31,
+        "max": 180.14,
+        "engine_p50": 80.65
+      },
+      {
+        "endpoint": "title search",
+        "n": 300,
+        "p50": 17.98,
+        "p95": 25.28,
+        "p99": 29.32,
+        "mean": 18.61,
+        "max": 37.5,
+        "engine_p50": 7.75
+      }
+    ],
+    "warm_breakdown_ms": {
+      "stage1_ms": 8.13,
+      "features_ms": 12.31,
+      "ranker_ms": 4.65,
+      "mmr_ms": 10.92,
+      "explain_ms": 35.8,
+      "format_ms": 0.6
+    },
+    "rss_end_mb": 603.7,
+    "note": "one request at a time on this machine; latencies vary run to run \u2014 quote as approximate"
+  },
+  "latency_server": {
+    "requests_per_endpoint": 300,
+    "warmup": 10,
+    "target": "http://localhost:8000",
+    "health": {
+      "status": "ok",
+      "items": 23109,
+      "demo_users": 1000,
+      "warm_ranker_trees": 83,
+      "cold_ranker": true,
+      "mmr": {
+        "space": "genre",
+        "lambda": 0.7,
+        "pool": 50
+      },
+      "release_filter": true,
+      "policy_warm_from": 3,
+      "split_fingerprint": "a99079d4a40a",
+      "git_commit": "8e192bf",
+      "load_seconds": 0.69,
+      "text_search": true
+    },
+    "encoder_first_request_s": 0.52,
+    "rows": [
+      {
+        "endpoint": "warm user \u2014 served (ranker + MMR + explanations)",
+        "n": 300,
+        "p50": 44.4,
+        "p95": 72.75,
+        "p99": 112.75,
+        "mean": 49.79,
+        "max": 189.99,
+        "engine_p50": 41.41
+      },
+      {
+        "endpoint": "warm user \u2014 ranker only",
+        "n": 300,
+        "p50": 18.97,
+        "p95": 24.57,
+        "p99": 40.24,
+        "mean": 20.21,
+        "max": 99.57,
+        "engine_p50": 16.01
+      },
+      {
+        "endpoint": "cold start \u2014 0 picks (popularity)",
+        "n": 300,
+        "p50": 4.22,
+        "p95": 7.27,
+        "p99": 9.97,
+        "mean": 4.61,
+        "max": 11.72,
+        "engine_p50": 1.3
+      },
+      {
+        "endpoint": "cold start \u2014 1 pick (cold ranker)",
+        "n": 300,
+        "p50": 38.1,
+        "p95": 46.38,
+        "p99": 59.95,
+        "mean": 38.9,
+        "max": 67.81,
+        "engine_p50": 34.59
+      },
+      {
+        "endpoint": "cold start \u2014 3 picks (warm ranker)",
+        "n": 300,
+        "p50": 43.56,
+        "p95": 56.61,
+        "p99": 88.03,
+        "mean": 49.02,
+        "max": 918.41,
+        "engine_p50": 40.18
+      },
+      {
+        "endpoint": "cold start \u2014 5 picks (warm ranker)",
+        "n": 300,
+        "p50": 43.62,
+        "p95": 55.83,
+        "p99": 102.8,
+        "mean": 46.64,
+        "max": 170.83,
+        "engine_p50": 40.22
+      },
+      {
+        "endpoint": "free text \u2014 explore mode",
+        "n": 300,
+        "p50": 35.17,
+        "p95": 45.46,
+        "p99": 133.36,
+        "mean": 38.21,
+        "max": 162.12,
+        "engine_p50": 32.29
+      },
+      {
+        "endpoint": "title search",
+        "n": 300,
+        "p50": 5.59,
+        "p95": 6.82,
+        "p99": 13.76,
+        "mean": 5.95,
+        "max": 40.19,
+        "engine_p50": 3.06
+      }
+    ],
+    "note": "one request at a time on this machine; latencies vary run to run \u2014 quote as approximate"
+  }
+}

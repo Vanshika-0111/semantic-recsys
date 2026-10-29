@@ -24,6 +24,7 @@ FILES = {
     "day09": "day09_ranker.json",
     "day10": "day10_final.json",
     "day11": "day11_diversity.json",
+    "day12": "day12_serving.json",
 }
 WARM_COLS = ["model", "config", "ndcg@5", "ndcg@10", "ndcg@20", "recall@10", "precision@10",
              "mrr@10", "coverage@10", "long_tail@10"]
@@ -137,6 +138,7 @@ def build_summary(results_dir: Path | None = None) -> str:
     md += ranker_section(res)
     md += final_section(res)
     md += diversity_section(res)
+    md += serving_section(res)
 
     ann = res["day05"].get("ann", {})
     if ann.get("recommended"):
@@ -260,6 +262,35 @@ def diversity_section(res: dict[str, dict]) -> str:
                f"(rank {cf['control']['mean_rank_change']:+.1f}) for a random other recent like "
                f"({cf['n_pairs']:,} recommendations).\n\n")
     return md
+
+
+def serving_section(res: dict[str, dict]) -> str:
+    """Day 12: API — golden check, release-filter decision, request latency."""
+    d = res.get("day12", {})
+    if not d.get("latency") and not d.get("check"):
+        return ""
+    md = "## Serving — FastAPI (Day 12)\n\n"
+    c = d.get("check")
+    if c:
+        md += (f"- Golden check: the API engine (loaded from the bundle only) returns the same top-10 as the "
+               f"evaluation code for {c['warm']['identical_mmr']}/{c['warm']['n']} warm users (ranker + MMR) and "
+               + ", ".join(f"{v['identical']}/{v['n']} cold users at {k.split('_')[1]} pick(s)" for k, v in c["cold"].items())
+               + (" ✓" if c.get("all_identical") else " ✗") + "\n")
+    r = d.get("release")
+    if r:
+        sg = r["significance"]["filter_vs_ranker"]
+        md += (f"- Release filter (validation, {r['n_users']:,} users): {100 * sg['rel_change']:+.1f}% NDCG@10 "
+               f"(CI [{sg['ci95'][0]:+.4f}, {sg['ci95'][1]:+.4f}]) → **{'ON' if r['decision']['enabled'] else 'OFF'}** "
+               "for demo users\n")
+    b = d.get("bundle")
+    if b:
+        md += f"- Bundle: {b['size_mb']} MB, {b['n_items']:,} movies, {b['n_demo_users']:,} demo users\n"
+    L = d.get("latency")
+    if L:
+        md += ("\n| request (one at a time) | p50 ms | p95 ms |\n|---|---:|---:|\n"
+               + "".join(f"| {x['endpoint']} | {x['p50']:.1f} | {x['p95']:.1f} |\n" for x in L["rows"] if x.get("n")))
+        md += "\nLatencies vary run to run — quote as approximate.\n"
+    return md + "\n"
 
 
 def _final_sig(res: dict[str, dict], model: str, vs_prefix: str, seeds=None) -> dict | None:

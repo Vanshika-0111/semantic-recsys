@@ -14,6 +14,7 @@ All results were computed on the same frozen split ✓
 - `day09_ranker.json`: split `a99079d4a40a…`
 - `day10_final.json`: split `a99079d4a40a…`
 - `day11_diversity.json`: split `a99079d4a40a…`
+- `day12_serving.json`: split `a99079d4a40a…`
 
 ## Warm users — test (fit on train+val, 189,197 users)
 
@@ -162,6 +163,25 @@ Chosen on validation: genre similarity, λ 0.7 (most diverse setting within 2% o
 Selected MMR vs the ranker (paired bootstrap): ndcg@10 -1.4% [CI -0.0014, -0.0011]; recall@10 -1.1% [CI -0.0013, -0.0007]; mrr@10 -0.5% [CI -0.0012, -0.0007]; genre_ild +10.7% [CI +0.0654, +0.0659]; sem_ild +1.8% [CI +0.0160, +0.0162]; n_genres +12.7% [CI +1.2879, +1.3010].
 
 Explanations: "Because you liked X" available for 54% of served recommendations. Removing the cited X lowers the movie's score by 0.486 (rank +25.7) vs 0.018 (rank +0.6) for a random other recent like (2,679 recommendations).
+
+## Serving — FastAPI (Day 12)
+
+- Golden check: the API engine (loaded from the bundle only) returns the same top-10 as the evaluation code for 200/200 warm users (ranker + MMR) and 200/200 cold users at 1 pick(s), 200/200 cold users at 3 pick(s), 200/200 cold users at 5 pick(s) ✓
+- Release filter (validation, 5,000 users): +2.3% NDCG@10 (CI [+0.0017, +0.0026]) → **ON** for demo users
+- Bundle: 46.9 MB, 23,109 movies, 1,000 demo users
+
+| request (one at a time) | p50 ms | p95 ms |
+|---|---:|---:|
+| warm user — served (ranker + MMR + explanations) | 88.9 | 103.7 |
+| warm user — ranker only | 43.2 | 50.9 |
+| cold start — 0 picks (popularity) | 14.4 | 19.7 |
+| cold start — 1 pick (cold ranker) | 76.7 | 102.2 |
+| cold start — 3 picks (warm ranker) | 88.5 | 105.7 |
+| cold start — 5 picks (warm ranker) | 91.7 | 102.2 |
+| free text — explore mode | 93.0 | 110.5 |
+| title search | 18.0 | 25.3 |
+
+Latencies vary run to run — quote as approximate.
 
 ## FAISS Flat vs HNSW — 23,109 × 384 vectors, 1 thread
 

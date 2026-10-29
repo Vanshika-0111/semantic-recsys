@@ -1,7 +1,7 @@
 """Day 7: the whole project in ONE command, in the right order, reproducibly.
 
     download -> prepare -> eda -> split -> baselines -> embeddings -> retrieval -> coldstart
-      -> candidates -> ranker -> final -> summary
+      -> candidates -> ranker -> final -> diversity -> serving -> summary
 
 Each step is the existing script (nothing is re-implemented here). A step whose outputs already
 exist is SKIPPED, so a second run costs seconds — except the split, which is never rebuilt: if it
@@ -49,7 +49,7 @@ SCRIPTS = Path(__file__).resolve().parent
 LOG_DIR = config.DATA_DIR / "logs"
 MANIFEST = config.RESULTS_DIR / "pipeline_manifest.json"
 PACKAGES = ["numpy", "pandas", "pyarrow", "scipy", "scikit-learn", "faiss-cpu", "torch",
-            "sentence-transformers", "lightgbm", "matplotlib"]
+            "sentence-transformers", "lightgbm", "matplotlib", "fastapi", "uvicorn"]
 
 
 def current_fingerprint() -> str | None:
@@ -128,6 +128,10 @@ STEPS = [
          has_results("day11_diversity", ("tune", "test", "explain"),
                      ("runs/day11_test_per_user.parquet",)),
          smoke_flag=True, what="Day 11: MMR diversity re-ranking + 'Because you liked X' explanations"),
+    Step("serving", "run_serving.py",
+         has_results("day12_serving", ("release", "bundle", "check", "latency"),
+                     ("serving/bundle.json", "serving/arrays.npz")),
+         smoke_flag=True, what="Day 12: API bundle, golden check (API == evaluation), p50/p95 latency"),
 ]
 NAMES = [s.name for s in STEPS]
 
