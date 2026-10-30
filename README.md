@@ -273,10 +273,16 @@ streamlit run app/streamlit_app.py          # terminal 2: the UI -> http://local
 - **CI** (`.github/workflows/ci.yml`): pytest (incl. an end-to-end UI test: Streamlit AppTest → real
   uvicorn server → Engine), then both Docker images are built and started with a small **synthetic
   bundle** (`scripts/make_synthetic_bundle.py`: 80 movies, real LightGBM rankers) and probed over HTTP.
-- **Public demo** (Hugging Face Docker Space): `scripts/upload_bundle.py` publishes the bundle to a
-  model repo **without any user's ratings** (MovieLens licence), `scripts/deploy_space.py` uploads a code
-  snapshot + `deploy/hf_space/Dockerfile`; at startup the Space downloads the bundle and runs the API
-  (internal) and the UI (public) in one container.
+- **Public demo** (Streamlit Community Cloud, free): `scripts/upload_bundle.py` publishes the serving
+  bundle to a Hugging Face model repo **without any user's ratings** (MovieLens licence). The demo runs
+  `app/streamlit_app.py` with its own small `app/requirements.txt` (CPU-only torch); with no API server
+  next to it, the UI starts the **same FastAPI app in-process** (same routes, validation and Engine) and
+  downloads the bundle from Hugging Face on first start. `scripts/check_public_bundle.py` runs that exact
+  path on the laptop. The UI picks its API automatically: `RECSYS_API_URL` → that server; a server on
+  localhost:8000 → that one; otherwise in-process.
+- **Container deployment** (`deploy/hf_space/`): one Docker image running the API + UI, built and
+  smoke-tested by CI on every push; `scripts/deploy_space.py` deploys it as a Hugging Face Docker Space
+  (needs Hugging Face PRO since mid-2026).
 
 ## Data attribution
 

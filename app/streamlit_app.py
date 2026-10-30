@@ -3,8 +3,13 @@
     uvicorn recsys.api:app --port 8000                 (terminal 1: the API, Day 12)
     streamlit run app/streamlit_app.py                 (terminal 2: this UI -> http://localhost:8501)
 
-The UI only talks HTTP to the API (recsys.client.ApiClient) — no model code runs here. Set
-RECSYS_API_URL if the API is not on http://localhost:8000.
+The UI only talks to the API (recsys.client.ApiClient), never to the model code directly.
+Where the API is:
+  RECSYS_API_URL set   -> that server (Docker Space, CI)
+  a server answers on http://localhost:8000 -> that one (your two-terminal setup)
+  otherwise            -> the same FastAPI app runs INSIDE this process ("in-process" mode, used on
+                          Streamlit Community Cloud): bundle from data/serving, or downloaded from
+                          the Hugging Face repo in BUNDLE_REPO. Set RECSYS_EMBEDDED=1 to force it.
 
 Tabs
   Pick movies     onboarding: search / popular grid -> picks -> live recommendations
@@ -18,10 +23,14 @@ from __future__ import annotations
 import html
 import inspect
 import os
+import sys
+from pathlib import Path
 
 import streamlit as st
 
-from recsys.client import ApiClient, ApiError
+# Streamlit Community Cloud runs this file from the repo without `pip install -e .`
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from recsys.client import EMBEDDED, ApiClient, ApiError, choose_target, embedded_client  # noqa: E402
 
 REPO_URL = os.environ.get("RECSYS_REPO_URL", "https://github.com/Vanshika-0111/semantic-recsys")
 MAX_PICKS = 20
@@ -89,12 +98,24 @@ st.markdown("""
 # --------------------------------------------------------------------------- #
 # API access (cached; errors are not cached)
 # --------------------------------------------------------------------------- #
-API_URL = os.environ.get("RECSYS_API_URL", "http://localhost:8000")
+BUNDLE_REPO = os.environ.get("BUNDLE_REPO", "Vanshika-0111/semantic-recsys-bundle")
+
+
+@st.cache_resource(show_spinner=False)
+def _target(env_url: str | None, force_embedded: bool) -> str:
+    return choose_target(env_url, force_embedded)
+
+
+API_URL = _target(os.environ.get("RECSYS_API_URL"), os.environ.get("RECSYS_EMBEDDED") == "1")
 
 
 # every cached call is keyed by the API URL, so a cache never answers for another server
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def _client(url: str) -> ApiClient:
+    if url == EMBEDDED:
+        # one engine per server process, shared by every visitor's session
+        with st.spinner("Loading the recommender (first start downloads ~50 MB, about a minute) ..."):
+            return embedded_client(bundle_repo=BUNDLE_REPO)
     return ApiClient(url)
 
 
@@ -272,6 +293,9 @@ except ApiError as e:
     st.error(f"The recommendation API isn't reachable yet: {e}. If the demo has just started, "
              "wait a few seconds and reload.")
     st.stop()
+except Exception as e:                                       # noqa: BLE001  (in-process load failed)
+    st.error(f"The recommender could not be loaded: {type(e).__name__}: {e}")
+    st.stop()
 
 with st.sidebar:
     st.subheader("Results (held-out test)")
@@ -285,8 +309,9 @@ with st.sidebar:
         "3. **Ranker** — LightGBM LambdaMART (separate cold-start ranker for 1–2 picks)\n"
         "4. **Diversity** — MMR re-ranking over genres\n"
         "5. **Why** — TreeSHAP reason + the liked movie closest to each pick")
-    st.caption(f"API: {info.get('items', '?'):,} movies · ranker {info.get('warm_ranker_trees', '?')} trees · "
-               f"code {info.get('git_commit') or 'dev'} · [GitHub]({REPO_URL})")
+    where = "in-process" if API_URL == EMBEDDED else API_URL
+    st.caption(f"API ({where}): {info.get('items', '?'):,} movies · ranker {info.get('warm_ranker_trees', '?')} "
+               f"trees · code {info.get('git_commit') or 'dev'} · [GitHub]({REPO_URL})")
 
 has_demo = int(info.get("demo_users", 0)) > 0
 names = ["🎯 Pick movies", "💬 Describe it", "🔁 Similar movies"] + (["👤 Demo users"] if has_demo else [])

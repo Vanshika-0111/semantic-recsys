@@ -6,6 +6,7 @@ with Streamlit's AppTest (headless, no browser) and clicked through: popular gri
 the recommendations shown must be exactly the API's for those picks (which Day 12 checked equal to
 the evaluated batch path). So UI -> HTTP -> Engine -> ranker is covered in one chain.
 """
+import shutil
 import socket
 import sys
 import threading
@@ -176,3 +177,76 @@ def test_ui_public_bundle_has_no_demo_tab(api, app_test):
 def test_ui_shows_a_clear_error_without_api(app_test):
     at = app_test(f"http://127.0.0.1:{free_port()}")
     assert any("isn't reachable" in e.value for e in at.error)
+
+
+# --------------------------------------------------------------------------- #
+# In-process ("embedded") mode — used on Streamlit Community Cloud
+# --------------------------------------------------------------------------- #
+from recsys.client import EMBEDDED, choose_target, embedded_client  # noqa: E402
+
+
+def test_choose_target(api):
+    dead = f"http://127.0.0.1:{free_port()}"
+    assert choose_target("http://x:1/") == "http://x:1"                       # explicit URL wins
+    assert choose_target("http://x:1", force_embedded=True) == "http://x:1"
+    assert choose_target(None, force_embedded=True) == EMBEDDED
+    assert choose_target(None, probe_url=api["public"]) == api["public"]       # a server answers
+    assert choose_target(None, probe_url=dead, probe_timeout=0.5) == EMBEDDED   # nothing there
+
+
+def test_embedded_client_is_the_same_api(api, tmp_path):
+    build_synthetic_bundle(tmp_path / "b", work_dir=tmp_path / "m", demo_users=False)
+    emb = embedded_client(tmp_path / "b", preload_encoder=False)
+    http = ApiClient(api["public"])                       # same synthetic world, served over HTTP
+    assert emb.health()["items"] == 80 and emb.base_url.startswith("in-process")
+    for picks in ([], [10], [10, 20, 30]):
+        a, b = emb.cold_start(picks, k=6), http.cold_start(picks, k=6)
+        assert a["model"] == b["model"] and a["items"] == b["items"]
+    with pytest.raises(ApiError) as e:                    # same validation + status codes
+        emb.cold_start([10, 777])
+    assert e.value.status == 422
+    with pytest.raises(ApiError) as e:
+        emb.movie(123456)
+    assert e.value.status == 404
+    with pytest.raises(ApiError) as e:                    # no encoder in the synthetic bundle
+        emb.explore("space opera")
+    assert e.value.status == 503
+
+
+def test_embedded_client_downloads_when_no_local_bundle(tmp_path, monkeypatch):
+    from recsys import config, hub
+    build_synthetic_bundle(tmp_path / "remote", work_dir=tmp_path / "m", demo_users=False)
+    calls = []
+
+    def fake_download(repo, out, revision=None, token=None):
+        calls.append(repo)
+        shutil.copytree(tmp_path / "remote", out, dirs_exist_ok=True)
+        return Path(out)
+
+    monkeypatch.setattr(hub, "download_bundle", fake_download)
+    monkeypatch.setattr(config, "SERVING_DIR", tmp_path / "no-local-bundle")
+    monkeypatch.delenv("RECSYS_BUNDLE", raising=False)
+    monkeypatch.setattr("tempfile.gettempdir", lambda: str(tmp_path / "tmp"))
+    emb = embedded_client(bundle_repo="alice/semantic-recsys-bundle", preload_encoder=False)
+    assert calls == ["alice/semantic-recsys-bundle"] and emb.health()["items"] == 80
+    # no local bundle and no repo to download from -> a clear error, not a crash
+    monkeypatch.delenv("BUNDLE_REPO", raising=False)
+    with pytest.raises(ApiError, match="no serving bundle"):
+        embedded_client(tmp_path / "nothing-here", preload_encoder=False)
+
+
+def test_ui_runs_in_process_without_an_api_server(tmp_path, monkeypatch):
+    from streamlit.testing.v1 import AppTest
+    build_synthetic_bundle(tmp_path / "b", work_dir=tmp_path / "m", demo_users=False)
+    monkeypatch.delenv("RECSYS_API_URL", raising=False)
+    monkeypatch.setenv("RECSYS_EMBEDDED", "1")
+    monkeypatch.setenv("RECSYS_BUNDLE", str(tmp_path / "b"))
+    at = AppTest.from_file(APP, default_timeout=60)
+    at.run()
+    assert not at.exception, at.exception
+    assert any("in-process" in c.value for c in at.caption)
+    assert "Popular right now" in [s.value for s in at.subheader]
+    pop = ApiClient.in_process(__import__("recsys.api", fromlist=["x"]).create_app(
+        engine=Engine.load(tmp_path / "b", encoder=FakeEncoder()))).popular(20)["items"]
+    at.button(key=f"add_p_{pop[0]['movieId']}").click().run()
+    assert not at.exception and "cold ranker" in "\n".join(c.value for c in at.caption)

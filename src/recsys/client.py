@@ -12,6 +12,7 @@ the API's (the one with the golden check, Day 12).
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 import httpx
 
@@ -92,3 +93,73 @@ class ApiClient:
 
     def similar(self, movie_id: int, k: int = 10) -> dict:
         return self._call("GET", f"/movies/{int(movie_id)}/similar", params={"k": k})
+
+    # ---------------- in-process mode (free hosting without a second server) ----------------
+    @classmethod
+    def in_process(cls, app, label: str = "in-process") -> "ApiClient":
+        """A client that sends every request to a FastAPI app object in this process (FastAPI's
+        TestClient), instead of over the network. Same routes, validation, error codes and Engine
+        as the HTTP server — only the transport differs."""
+        from fastapi.testclient import TestClient
+
+        obj = cls.__new__(cls)
+        obj.base_url = label
+        obj._http = TestClient(app, base_url="http://in-process", raise_server_exceptions=False)
+        return obj
+
+
+# --------------------------------------------------------------------------- #
+# Day 13: where the UI gets its API from
+# --------------------------------------------------------------------------- #
+EMBEDDED = "embedded"
+
+
+def choose_target(env_url: str | None, force_embedded: bool = False,
+                  probe_url: str = DEFAULT_URL, probe_timeout: float = 1.5) -> str:
+    """The API the UI should use:
+    RECSYS_API_URL set      -> that server (Docker Space, CI, custom port)
+    RECSYS_EMBEDDED=1       -> the API inside the UI process
+    otherwise               -> a server on localhost:8000 if one answers (your two-terminal setup),
+                               else the API inside the UI process (Streamlit Community Cloud)."""
+    if env_url:
+        return env_url.rstrip("/")
+    if force_embedded:
+        return EMBEDDED
+    try:
+        ApiClient(probe_url, timeout=probe_timeout).health()
+        return probe_url
+    except ApiError:
+        return EMBEDDED
+
+
+def embedded_client(bundle_dir: Path | str | None = None, bundle_repo: str | None = None,
+                    preload_encoder: bool = True) -> ApiClient:
+    """Load the serving bundle and wrap the FastAPI app in an in-process client.
+
+    Bundle: bundle_dir / $RECSYS_BUNDLE if it holds one, else data/serving if it holds one,
+    else download bundle_repo / $BUNDLE_REPO from Hugging Face into a temp folder (cached there
+    across restarts of the same machine)."""
+    import tempfile
+
+    from . import config
+    from .experiment import setup_runtime
+
+    setup_runtime()
+    candidates = [bundle_dir, os.environ.get("RECSYS_BUNDLE"), config.SERVING_DIR]
+    found = next((Path(c) for c in candidates if c and (Path(c) / "bundle.json").exists()), None)
+    if found is None:
+        repo = bundle_repo or os.environ.get("BUNDLE_REPO")
+        if not repo:
+            raise ApiError("no serving bundle found and no BUNDLE_REPO to download one from")
+        from .hub import download_bundle
+        found = download_bundle(repo, Path(tempfile.gettempdir()) / "recsys-serving")
+
+    from .api import create_app
+    from .serving import Engine
+    engine = Engine.load(found)
+    if preload_encoder:
+        try:
+            engine.encoder()
+        except RuntimeError:
+            pass                                   # no sentence-transformers: text search -> 503
+    return ApiClient.in_process(create_app(engine=engine), label=f"in-process ({found.name})")
