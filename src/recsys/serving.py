@@ -103,8 +103,9 @@ def export_bundle(out_dir: Path, catalog, raw_vectors: np.ndarray, ts: TwoStage,
     items.to_parquet(out_dir / "items.parquet", index=False)
 
     hist = demo_history[HISTORY_COLS].sort_values(["userId", "timestamp", "movieId"], kind="stable")
-    hist.to_parquet(out_dir / "demo_history.parquet", index=False)
-    if demo_truth is not None:
+    if len(hist):                     # no demo users -> no file (Engine.load treats it as empty)
+        hist.to_parquet(out_dir / "demo_history.parquet", index=False)
+    if demo_truth is not None and len(demo_truth):
         demo_truth[["userId", "movieId", "rating"]].sort_values(["userId", "movieId"]).to_parquet(
             out_dir / "demo_truth.parquet", index=False)
 
@@ -214,7 +215,12 @@ class Engine:
                                   query_prefix=enc.get("query_prefix", ""), encoder=encoder)
         loader = (_encoder_loader(enc["hf_name"]) if encoder is None and enc.get("hf_name") else None)
 
-        hist = pd.read_parquet(d / "demo_history.parquet")[HISTORY_COLS]
+        # Day 13: demo users are optional — the public bundle ships without them (the MovieLens
+        # licence does not allow redistributing ratings), the laptop bundle has 1,000
+        hist = (pd.read_parquet(d / "demo_history.parquet")[HISTORY_COLS]
+                if (d / "demo_history.parquet").exists() else
+                pd.DataFrame({c: pd.Series(dtype="float64" if c == "rating" else "int64")
+                              for c in HISTORY_COLS}))
         hist = hist.sort_values(["userId", "timestamp", "movieId"], kind="stable").reset_index(drop=True)
         truth = (pd.read_parquet(d / "demo_truth.parquet") if (d / "demo_truth.parquet").exists()
                  else pd.DataFrame(columns=["userId", "movieId", "rating"]))

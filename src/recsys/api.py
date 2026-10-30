@@ -128,7 +128,7 @@ def create_app(engine=None, bundle_dir: str | Path | None = None) -> FastAPI:
 
     app = FastAPI(title="Semantic Recommendation & Ranking Engine",
                   description="MovieLens 32M + TMDB · bge-small embeddings · FAISS · LightGBM LambdaMART",
-                  version="0.12.0", lifespan=lifespan)
+                  version="0.13.0", lifespan=lifespan)
     app.state.engine = engine
 
     @app.middleware("http")

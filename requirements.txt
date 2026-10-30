@@ -17,3 +17,4 @@ uvicorn>=0.29
 psutil>=5.9                # Day 12 memory of the API engine
 httpx>=0.27                # Day 12 API tests (FastAPI TestClient) + latency benchmark
 streamlit>=1.35            # Day 13 UI
+huggingface_hub>=0.23      # Day 13 bundle upload + public demo deploy

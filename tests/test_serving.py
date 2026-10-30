@@ -18,102 +18,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from recsys.baselines import ItemIndex  # noqa: E402
 from recsys.coldstart import popularity_prior  # noqa: E402
 from recsys.embeddings import center_vectors, l2_normalize  # noqa: E402
-from recsys.experiment import Catalog  # noqa: E402
 from recsys.explain import REASONS  # noqa: E402
-from recsys.features import attach_labels  # noqa: E402
 from recsys.metrics import PAD  # noqa: E402
-from recsys.ranker import RankData, build_two_stage, top_from_scores, train_ranker  # noqa: E402
-from recsys.serving import (Engine, UnknownMovie, export_bundle, latency_summary,  # noqa: E402
+from recsys.ranker import top_from_scores  # noqa: E402
+from recsys.synthetic import MMR, FakeEncoder, build_synthetic_bundle  # noqa: E402
+from recsys.serving import (Engine, UnknownMovie, latency_summary,  # noqa: E402
                             release_filter)
-
-DAY = 86_400
-YEAR_1996 = 820_454_400                     # 1996-01-01 UTC
-MMR = {"space": "genre", "lambda": 0.7, "pool": 15}
-CHOSEN = {"popularity_mode": "liked", "center": True,
-          "profile": {"weighting": "graded", "half_life": 5}}
-
-
-# --------------------------------------------------------------------------- #
-# Synthetic world
-# --------------------------------------------------------------------------- #
-class FakeEncoder:
-    """Text -> a fixed 16-d vector seeded by the text length (stand-in for bge-small)."""
-
-    def encode(self, texts, **kw):
-        return np.stack([np.random.default_rng(len(t)).normal(size=16) for t in texts]).astype(np.float32)
-
-
-def make_world(seed: int = 0):
-    rng = np.random.default_rng(seed)
-    n_items, n_users, d = 80, 60, 16
-    ids = np.arange(1, n_items + 1) * 10
-    raw = l2_normalize(rng.normal(size=(n_items, d)))
-    vocab = ["Action", "Comedy", "Drama", "Horror"]
-    G = np.zeros((n_items, 4), dtype=np.float32)
-    G[np.arange(n_items), np.argmax(raw[:, :4], axis=1)] = 1
-    G[rng.random(n_items) < 0.3, rng.integers(0, 4)] = 1
-    years = rng.integers(1970, 2019, n_items).astype(float)
-    years[[3, 17]] = np.nan
-    items = pd.DataFrame({"movieId": ids, "title_clean": [f"Movie {m}" for m in ids], "year": years,
-                          "runtime": rng.integers(80, 160, n_items).astype(float),
-                          "poster_path": [f"/p{m}.jpg" for m in ids],
-                          "overview": [f"Overview of movie {m}" for m in ids], "tmdbId": ids + 1})
-    index = ItemIndex(ids)
-    label = {m: f"Movie {m} ({'?' if np.isnan(y) else int(y)})" for m, y in zip(ids, years)}
-    cat = Catalog(items, index, pd.Series([""] * n_items, index=ids), G, vocab, label)
-
-    pop = np.exp(rng.normal(size=n_items))
-    taste = l2_normalize(rng.normal(size=(n_users, d)))
-    rows = []
-    for u in range(1, n_users + 1):
-        w = pop * np.exp(3 * raw @ taste[u - 1])
-        picks = rng.choice(n_items, size=25, replace=False, p=w / w.sum())
-        t = YEAR_1996 + rng.integers(0, 20 * 365) * DAY + np.arange(25) * DAY * 30
-        r = np.clip(np.round((3.2 + 2.5 * (raw[picks] @ taste[u - 1]) + rng.normal(0, .5, 25)) * 2) / 2, .5, 5)
-        rows.append(pd.DataFrame({"userId": u, "movieId": ids[picks], "rating": r, "timestamp": t}))
-    hist = pd.concat(rows, ignore_index=True)
-    return cat, raw, hist
-
-
-def train_booster(cat, raw, hist, leaves: int, rounds: int, path: Path):
-    """Real LightGBM LambdaMART on the synthetic data: features from all but each user's last 5
-    ratings, labels = those 5 (the Day 9 recipe in miniature)."""
-    last5 = hist.groupby("userId").cumcount(ascending=False) < 5
-    train, label = hist[~last5], hist[last5]
-    ts = build_two_stage(cat, raw, CHOSEN, train, n_pop=30, m_faiss=10, faiss_feature_m=10)
-    users = np.unique(train["userId"])
-    df = attach_labels(ts.feature_batch(train, users).to_frame(), label)
-    d = RankData.from_frame(df)
-    cfg = {"labels": "graded", "num_leaves": leaves, "min_data_in_leaf": 5, "learning_rate": 0.1}
-    booster, _ = train_ranker(d.drop_users_without_positives(), d, cfg, seed=1, max_rounds=rounds,
-                              early_stopping=rounds, threads=1)
-    booster.save_model(str(path))
-    return booster
 
 
 @pytest.fixture(scope="module")
 def world(tmp_path_factory):
-    import lightgbm as lgb
-
+    # the synthetic world + bundle now live in recsys.synthetic (Day 13: CI builds the same bundle)
     tmp = tmp_path_factory.mktemp("serving")
-    cat, raw, hist = make_world()
-    train_booster(cat, raw, hist, 7, 20, tmp / "warm.txt")
-    train_booster(cat, raw, hist, 3, 10, tmp / "cold.txt")
-    warm = lgb.Booster(model_file=str(tmp / "warm.txt"))
-    cold = lgb.Booster(model_file=str(tmp / "cold.txt"))
-    ts = build_two_stage(cat, raw, CHOSEN, hist, n_pop=30, m_faiss=10, faiss_feature_m=10, booster=warm)
-    demo = np.arange(1, 21)
-    truth = pd.DataFrame({"userId": [1, 1], "movieId": [10, 20], "rating": [4.0, 2.0]})
-    settings = {"policy": {"warm_from": 3}, "mmr": MMR, "release_filter": {"enabled": False},
-                "explain": {"min_cos": 0.3}, "explore": {"pool": 1000, "lambda": 0.3},
-                "encoder": {"key": "fake", "hf_name": None, "query_prefix": "q: "}}
-    man = export_bundle(tmp / "bundle", cat, raw, ts, warm_model=tmp / "warm.txt",
-                        cold_model=tmp / "cold.txt", prior=popularity_prior(hist, cat.index),
-                        demo_history=hist[hist["userId"].isin(demo)], demo_truth=truth,
-                        settings=settings, meta={"split_fingerprint": "synthetic"})
-    eng = Engine.load(tmp / "bundle", encoder=FakeEncoder())
-    return {"cat": cat, "raw": raw, "hist": hist, "ts": ts, "warm": warm, "cold": cold,
-            "eng": eng, "man": man, "demo": demo, "dir": tmp / "bundle"}
+    w = build_synthetic_bundle(tmp / "bundle", work_dir=tmp)
+    w["eng"] = Engine.load(tmp / "bundle", encoder=FakeEncoder())
+    return w
 
 
 def hist_of(hist, u):
@@ -354,3 +273,21 @@ def test_api_movies_and_users(client):
     assert client.get("/users/demo").json()["n"] == 20
     h = client.get("/users/1/history").json()
     assert [x["movieId"] for x in h["next_liked"]] == [10]     # truth: 10 (4★) liked, 20 (2★) not
+
+
+# --------------------------------------------------------------------------- #
+# Day 13: a bundle without demo users (the public Hugging Face one)
+# --------------------------------------------------------------------------- #
+def test_bundle_without_demo_users_still_serves(tmp_path):
+    w = build_synthetic_bundle(tmp_path / "b", demo_users=False)
+    assert not (tmp_path / "b" / "demo_history.parquet").exists()
+    eng = Engine.load(tmp_path / "b", encoder=FakeEncoder())
+    assert len(eng.demo_users) == 0 and not eng.has_user(1) and eng.info()["demo_users"] == 0
+    assert eng.cold_start([10, 20, 30], k=5)["model"] == "warm ranker"
+    from fastapi.testclient import TestClient
+
+    from recsys.api import create_app
+    with TestClient(create_app(engine=eng)) as c:
+        assert c.get("/users/demo").json() == {"n": 0, "user_ids": []}
+        assert c.get("/recommend/1").status_code == 404
+    assert w["man"]["n_demo_users"] == 0

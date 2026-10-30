@@ -1,0 +1,108 @@
+# Day 13 CI: on every push / pull request
+#   test          pytest (all unit + API + UI tests; torch is not needed — the encoder is faked)
+#   docker-api    build the Day 12 API image (Dockerfile) with a small SYNTHETIC bundle, start it,
+#                 check /health and one recommendation request
+#   docker-space  build the Hugging Face demo image (deploy/hf_space/Dockerfile: CPU torch + baked
+#                 bge-small encoder + Streamlit), start it with the synthetic bundle mounted, check
+#                 the UI and the internal API, and that the encoder loads offline
+# The real 47 MB bundle never enters CI (it is git-ignored and lives on Hugging Face).
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install (without torch / sentence-transformers / kaggle)
+        run: |
+          grep -v -e sentence-transformers -e kaggle requirements.txt > /tmp/req-ci.txt
+          pip install -r /tmp/req-ci.txt
+          pip install --no-deps -e .
+      - name: pytest
+        run: pytest -q
+
+  docker-api:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Synthetic serving bundle -> data/serving
+        run: |
+          grep -v -e sentence-transformers -e kaggle requirements.txt > /tmp/req-ci.txt
+          pip install -r /tmp/req-ci.txt && pip install --no-deps -e .
+          python scripts/make_synthetic_bundle.py
+      - name: Build API image (no text encoder -> smaller, faster build)
+        run: docker build --build-arg WITH_TEXT=false -t recsys-api .
+      - name: Run and check
+        run: |
+          docker run -d --name api -p 8000:8000 recsys-api
+          for i in $(seq 1 60); do curl -sf localhost:8000/health && break; sleep 2; done
+          echo
+          curl -sf localhost:8000/health | python -c "import json,sys; h=json.load(sys.stdin); assert h['status']=='ok' and h['items']==80, h; print('health ok', h)"
+          curl -sf -X POST localhost:8000/recommend/cold-start -H 'Content-Type: application/json' \
+               -d '{"picks":[10,20,30],"k":5}' \
+            | python -c "import json,sys; r=json.load(sys.stdin); assert r['model']=='warm ranker' and len(r['items'])==5, r; print('3 picks ->', r['model'], [i['movieId'] for i in r['items']], r['latency_ms'], 'ms')"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST localhost:8000/recommend/cold-start \
+                 -H 'Content-Type: application/json' -d '{"text":"space opera"}')
+          test "$code" = "503" && echo "free text without encoder -> 503 as designed"
+      - name: Container logs
+        if: always()
+        run: docker logs api || true
+
+  docker-space:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Synthetic serving bundle (no demo users, like the public one)
+        run: |
+          grep -v -e sentence-transformers -e kaggle requirements.txt > /tmp/req-ci.txt
+          pip install -r /tmp/req-ci.txt && pip install --no-deps -e .
+          python scripts/make_synthetic_bundle.py --out /tmp/bundle --no-demo-users
+          chmod -R a+rX /tmp/bundle
+      - name: Build demo image (same Dockerfile Hugging Face builds)
+        run: docker build -f deploy/hf_space/Dockerfile -t recsys-space .
+      - name: Encoder is baked in (works offline)
+        run: |
+          docker run --rm -e HF_HUB_OFFLINE=1 recsys-space python -c \
+            "from sentence_transformers import SentenceTransformer as S; v=S('BAAI/bge-small-en-v1.5', device='cpu').encode(['heist movie']); assert v.shape==(1,384); print('bge-small offline ok', v.shape)"
+      - name: Run and check (UI on 7860, API inside)
+        run: |
+          docker run -d --name space -p 7860:7860 -v /tmp/bundle:/home/user/app/data/serving:ro recsys-space
+          for i in $(seq 1 90); do curl -sf localhost:7860/_stcore/health && break; sleep 2; done
+          echo
+          curl -sf localhost:7860/_stcore/health
+          docker exec space curl -sf http://127.0.0.1:8000/health
+          echo
+          docker exec space curl -sf -X POST http://127.0.0.1:8000/recommend/cold-start \
+               -H 'Content-Type: application/json' -d '{"picks":[10],"k":3}'
+      - name: Container logs
+        if: always()
+        run: docker logs space || true

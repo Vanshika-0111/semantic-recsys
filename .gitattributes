@@ -1,0 +1,4 @@
+# Day 13: files that run inside Linux containers must keep LF line endings, even on Windows
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+*.yml       text eol=lf

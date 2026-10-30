@@ -37,7 +37,7 @@ COPY src ./src
 RUN pip install --no-deps -e .
 COPY data/serving ./data/serving
 
-RUN useradd --create-home app && chown -R app /app /opt/hf
+RUN mkdir -p /opt/hf && useradd --create-home app && chown -R app /app /opt/hf
 USER app
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s \

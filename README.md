@@ -1,5 +1,7 @@
 # Semantic Recommendation & Ranking Engine
 
+[![CI](https://github.com/Vanshika-0111/semantic-recsys/actions/workflows/ci.yml/badge.svg)](https://github.com/Vanshika-0111/semantic-recsys/actions/workflows/ci.yml)
+
 Two-stage movie recommender: dense semantic retrieval (Sentence Transformers + FAISS)
 followed by a LightGBM learning-to-rank model, with zero-shot cold-start support.
 Data: MovieLens 32M joined with TMDB metadata.
@@ -55,8 +57,13 @@ Every script also runs on its own and has `--smoke` and `--stages …`.
 ```
 src/recsys/      library code: config, data, split, metrics, text, baselines, embeddings, ann,
                  candidates, features, ranker, coldstart, evaluation, diversity, explain,
-                 serving (bundle + Engine), api (FastAPI), experiment (shared script plumbing), summary
-scripts/         runnable pipeline steps + run_pipeline.py
+                 serving (bundle + Engine), api (FastAPI), client (HTTP client for the UI), hub (Hugging
+                 Face publish/deploy), synthetic (small synthetic world for tests + CI),
+                 experiment (shared script plumbing), summary
+app/             Streamlit UI (talks to the API over HTTP)
+deploy/          Hugging Face Space: Dockerfile, README header, start script (API + UI in one container)
+.github/         CI: pytest + Docker builds of the API and demo images with a synthetic bundle
+scripts/         runnable pipeline steps + run_pipeline.py; upload_bundle / deploy_space (Day 13)
 tests/           unit tests (expected values hand-computed in comments)
 reports/         EDA summary, figures, results/ (json + markdown per day, summary.md, manifest)
 data/            raw + processed data, caches, logs (git-ignored)
@@ -251,8 +258,29 @@ uvicorn recsys.api:app --port 8000         # then open http://localhost:8000/doc
 - **Docker:** `docker build -t semantic-recsys-api .` then `docker run -p 8000:8000 semantic-recsys-api`
   (needs `data/serving` built first; `--build-arg WITH_TEXT=false` for a small image without free-text search).
 
+## UI, CI and public demo (Day 13)
+
+```bash
+uvicorn recsys.api:app --port 8000          # terminal 1: the API
+streamlit run app/streamlit_app.py          # terminal 2: the UI -> http://localhost:8501
+```
+
+- **UI** (`app/streamlit_app.py`): pick movies (popular grid, title search or a sample taste) and the
+  list updates live — 1–2 picks use the cold-start ranker, 3+ the full ranker; posters, the SHAP reason
+  and "Because you liked X" as a second line; free-text explore mode; similar movies; and, with the
+  local bundle, demo users with ✓ on recommendations they really liked later. The UI only talks HTTP to
+  the API, so what it shows is what the golden-checked API returns.
+- **CI** (`.github/workflows/ci.yml`): pytest (incl. an end-to-end UI test: Streamlit AppTest → real
+  uvicorn server → Engine), then both Docker images are built and started with a small **synthetic
+  bundle** (`scripts/make_synthetic_bundle.py`: 80 movies, real LightGBM rankers) and probed over HTTP.
+- **Public demo** (Hugging Face Docker Space): `scripts/upload_bundle.py` publishes the bundle to a
+  model repo **without any user's ratings** (MovieLens licence), `scripts/deploy_space.py` uploads a code
+  snapshot + `deploy/hf_space/Dockerfile`; at startup the Space downloads the bundle and runs the API
+  (internal) and the UI (public) in one container.
+
 ## Data attribution
 
 MovieLens: F. Maxwell Harper and Joseph A. Konstan. 2015. The MovieLens Datasets:
-History and Context. ACM TiiS 5, 4. This product uses the TMDB API but is not endorsed
-or certified by TMDB.
+History and Context. ACM TiiS 5, 4. This product uses TMDB data and images but is not endorsed
+or certified by TMDB. No MovieLens ratings are redistributed: the public demo bundle
+holds item-level aggregates and trained models only.
