@@ -1,13 +1,78 @@
 # Semantic Recommendation & Ranking Engine
 
 [![CI](https://github.com/Vanshika-0111/semantic-recsys/actions/workflows/ci.yml/badge.svg)](https://github.com/Vanshika-0111/semantic-recsys/actions/workflows/ci.yml)
+[![Live demo](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://semantic-recsys.streamlit.app/)
 
-Two-stage movie recommender: dense semantic retrieval (Sentence Transformers + FAISS)
-followed by a LightGBM learning-to-rank model, with zero-shot cold-start support.
-Data: MovieLens 32M joined with TMDB metadata.
+Two-stage movie recommender: semantic retrieval (Sentence Transformers + FAISS) followed by a
+LightGBM LambdaMART ranker, with zero-shot onboarding for brand-new users, diversity re-ranking and
+faithful "Because you liked X" explanations — evaluated on MovieLens 32M (+ TMDB metadata) and served
+by a FastAPI API behind a Streamlit UI.
 
-> Demo link, results table and charts go here (Day 14).
-> Current headline numbers: [`reports/results/summary.md`](reports/results/summary.md) (generated, not hand-written).
+**▶ Live demo: <https://semantic-recsys.streamlit.app/>** — pick a few movies you like (or describe
+what you're in the mood for) and the list updates live. Free hosting: if the app has been idle it
+takes about a minute to wake up.
+
+## Results at a glance
+
+All numbers are on held-out **test** data that no choice was tuned on (every setting was picked on
+validation first), with paired-bootstrap 95% CIs over users. Generated, not hand-copied:
+[`reports/results/summary.md`](reports/results/summary.md).
+
+| what | result |
+|---|---|
+| **Warm users** (189,197 test users), NDCG@10 | popularity **0.0501 → 0.0866 (+72.7%)**, p ≈ 0 · vs release-aware popularity **+55%** · vs TF-IDF content baseline ×4.9 |
+| What semantic embeddings add (ablation) | same ranker with no embeddings anywhere: 0.0698 → **+24.1%** with them |
+| **Cold-start users** (5,000 users never in training) | **+27.2%** NDCG@10 over popularity with 5 onboarding picks, **+17.1%** with 3 (both p < 0.001) |
+| Zero-shot, no ranker training | embedding re-rank of popular movies from the user's picks: +5.7% at 5 picks (p = 0.005) |
+| Two-stage retrieval | stage 1 = popular top-400 ∪ FAISS top-100 → 87% of users have a liked movie among 500 candidates; stage 2 = LambdaMART on 21 leak-free features |
+| Diversity (MMR, λ chosen on validation) | **+12.7% genres** per top-10 and +10.7% intra-list diversity for −1.4% NDCG@10 |
+| Explanations | removing the cited "you liked X" movie drops the recommendation **25.7 ranks** vs 0.6 for a random other like |
+| Serving | API answer = evaluation code (golden check 200/200); **~45 ms p50 / ~75 ms p95** per full request (ranker + MMR + explanations) on a laptop CPU |
+| Engineering | one-command reproducible pipeline, frozen fingerprinted split, 208 tests, CI builds and smoke-tests both Docker images |
+
+Full benchmark (NDCG / Recall / Precision / MRR @ 5, 10, 20 vs popularity, release-aware popularity,
+TF-IDF, embeddings and ablations): [`reports/results/day10_final.md`](reports/results/day10_final.md).
+
+| | |
+|---|---|
+| ![Warm-user test NDCG@10](reports/figures/day10_test_ndcg.png) | ![Cold-start test NDCG@10 by number of picks](reports/figures/day10_cold_test.png) |
+| ![Accuracy vs diversity (MMR)](reports/figures/day11_mmr_tradeoff.png) | ![SHAP feature importance](reports/figures/day10_shap.png) |
+
+## How it works
+
+```mermaid
+flowchart LR
+    U["user history<br/>or onboarding picks"] --> P["profile<br/>(recency-weighted bge-small embedding)"]
+    P --> F["FAISS top-100<br/>(semantic)"]
+    POP["popular top-400"] --> C["≈500 candidates"]
+    F --> C
+    C --> X["21 leak-free features<br/>popularity · quality · era · genres · 3 semantic cosines"]
+    X --> R["LightGBM LambdaMART"]
+    R --> M["MMR diversity<br/>(genre, λ 0.7)"]
+    M --> E["SHAP reason +<br/>'Because you liked X'"]
+    E --> O["top-10"]
+```
+
+1. **Item embeddings** — each movie's title, year, genres, keywords and overview → `bge-small-en-v1.5`
+   (384-d), mean-centered (fixes embedding anisotropy: ×3 NDCG for the content model).
+2. **User profile** — weighted average of liked movies' vectors, half-life of 5 likes (recency: +16%).
+3. **Stage 1** — popular top-400 ∪ FAISS top-100 by profile similarity (exact Flat index; HNSW is
+   3–5× faster for ~4% recall loss, benchmarked but not needed at 23k movies).
+4. **Stage 2** — LambdaMART ranks the candidates using features computed only from the training period.
+5. **New users** — 0 picks: popularity · 1–2 picks: a ranker trained on simulated new users ·
+   3+ picks: the main ranker (policy chosen on validation). Free text: semantic search mode.
+6. **Diversity + explanations** — MMR over the ranker's top-50; TreeSHAP decides the reason shown.
+
+## Honest limitations
+
+- Popularity is a very strong baseline on MovieLens; content-only models (TF-IDF, embeddings) reach
+  only ~35% of it. The gain comes from combining semantics with popularity/metadata in the ranker.
+- Part of the warm gain is "don't recommend movies released after the user stopped rating"; the
+  release-aware popularity baseline (+55%) and a no-year-features ablation (−9%) quantify it.
+- Per-user time split: other users' later ratings are in the training data (standard on MovieLens).
+- Recommendations skew towards Hollywood (MovieLens users are mostly US-based); text onboarding gives
+  on-topic lists but did not improve accuracy, so it is presented as a UX feature only.
+- Latencies are from a laptop CPU and vary run to run; the free demo host is slower.
 
 ## Quickstart — reproduce everything with one command
 
@@ -60,8 +125,8 @@ src/recsys/      library code: config, data, split, metrics, text, baselines, em
                  serving (bundle + Engine), api (FastAPI), client (HTTP client for the UI), hub (Hugging
                  Face publish/deploy), synthetic (small synthetic world for tests + CI),
                  experiment (shared script plumbing), summary
-app/             Streamlit UI (talks to the API over HTTP)
-deploy/          Hugging Face Space: Dockerfile, README header, start script (API + UI in one container)
+app/             Streamlit UI (talks to the API: over HTTP, or the same FastAPI app in-process on the public demo)
+deploy/          API + UI in one Docker container (CI-tested; deployable as a Hugging Face Docker Space)
 .github/         CI: pytest + Docker builds of the API and demo images with a synthetic bundle
 scripts/         runnable pipeline steps + run_pipeline.py; upload_bundle / deploy_space (Day 13)
 tests/           unit tests (expected values hand-computed in comments)

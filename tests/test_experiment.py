@@ -125,7 +125,8 @@ def test_summary_tables_and_cv_status(tmp_path):
     md = build_summary(tmp_path)
     assert "same frozen split ✓" in md
     assert "**+10.0% NDCG@10** over popularity with 5 onboarding picks" in md
-    assert "≥ 0.0560" in md                                   # 1.12 × 0.05
+    assert "test baseline **0.0500**" in md
+    assert "+12%" not in md                                   # Day 14: old CV claim retired
 
 
 def test_summary_flags_results_from_different_splits(tmp_path):

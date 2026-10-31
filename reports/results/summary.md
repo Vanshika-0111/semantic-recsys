@@ -170,6 +170,21 @@ Explanations: "Because you liked X" available for 54% of served recommendations.
 - Release filter (validation, 5,000 users): +2.3% NDCG@10 (CI [+0.0017, +0.0026]) → **ON** for demo users
 - Bundle: 46.9 MB, 23,109 movies, 1,000 demo users
 
+Real server over HTTP (uvicorn, separate process, 300 requests per endpoint, one at a time, laptop CPU) — **the numbers to quote**:
+
+| request | p50 ms | p95 ms |
+|---|---:|---:|
+| warm user — served (ranker + MMR + explanations) | 44.4 | 72.8 |
+| warm user — ranker only | 19.0 | 24.6 |
+| cold start — 0 picks (popularity) | 4.2 | 7.3 |
+| cold start — 1 pick (cold ranker) | 38.1 | 46.4 |
+| cold start — 3 picks (warm ranker) | 43.6 | 56.6 |
+| cold start — 5 picks (warm ranker) | 43.6 | 55.8 |
+| free text — explore mode | 35.2 | 45.5 |
+| title search | 5.6 | 6.8 |
+
+In-process benchmark (inside the pipeline process, after loading the 31M ratings — memory pressure on 8 GB, so slower):
+
 | request (one at a time) | p50 ms | p95 ms |
 |---|---:|---:|
 | warm user — served (ranker + MMR + explanations) | 88.9 | 103.7 |
@@ -197,13 +212,13 @@ Latencies vary run to run — quote as approximate.
 | text (encode + pool + rerank) | 41.8 | 67.9 |
 | 5 seeds (profile + pool + rerank) | 4.0 | 6.4 |
 
-## CV bullets — what the numbers support so far
+## CV bullets — what the numbers support
 
 1. Cold start: **+5.7% NDCG@10** over popularity with 5 onboarding picks (p = 0.005, 5,000 held-out users). ✓
    - Day 10 policy (two-stage ranker for new users), 1 picks: **+8.1%** vs popularity (p = 0.034, not significant)
    - Day 10 policy (two-stage ranker for new users), 3 picks: **+17.1%** vs popularity (p = 0.0, significant)
    - Day 10 policy (two-stage ranker for new users), 5 picks: **+27.2%** vs popularity (p = 0.0, significant)
 2. Two-stage retrieval & ranking: stage 1 = pop 400 + faiss 100, test recall 0.5188 (popularity alone at the same size: 0.5306); ranker ✓ (Day 9, validation): popular 400 ∪ FAISS 100 chosen end to end; tested on Day 10 (below).
-3. Warm-user NDCG@10 vs popularity: test baseline **0.0501**; the CV number comes from the Day 10 test run (a +12% claim would need ≥ 0.0561). Day 9 validation: ranker 0.0909 vs popularity 0.0485 on the same users (+87.4%).
+3. Warm-user NDCG@10 vs popularity: test baseline **0.0501**; the CV number comes from the Day 10 test run. Day 9 validation: ranker 0.0909 vs popularity 0.0485 on the same users (+87.4%).
    - **Day 10 TEST: ranker 0.0866 vs popularity 0.0501 = +72.7%** (p = 0.0, 189,197 users); vs release-aware popularity +55.0%; semantic part (vs the same ranker with no embeddings anywhere) +24.1% (p = 0.0)
 4. Benchmark: NDCG / Recall / Precision / MRR @5/10/20 vs popularity and TF-IDF — final test table above (Day 10) ✓.

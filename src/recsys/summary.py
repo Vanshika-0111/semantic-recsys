@@ -285,10 +285,19 @@ def serving_section(res: dict[str, dict]) -> str:
     b = d.get("bundle")
     if b:
         md += f"- Bundle: {b['size_mb']} MB, {b['n_items']:,} movies, {b['n_demo_users']:,} demo users\n"
+    S = d.get("latency_server")
+    if S:
+        md += (f"\nReal server over HTTP (uvicorn, separate process, {S.get('requests_per_endpoint', '?')} requests "
+               "per endpoint, one at a time, laptop CPU) — **the numbers to quote**:\n\n"
+               "| request | p50 ms | p95 ms |\n|---|---:|---:|\n"
+               + "".join(f"| {x['endpoint']} | {x['p50']:.1f} | {x['p95']:.1f} |\n" for x in S["rows"] if x.get("n")))
     L = d.get("latency")
     if L:
-        md += ("\n| request (one at a time) | p50 ms | p95 ms |\n|---|---:|---:|\n"
+        md += ("\n" + ("In-process benchmark (inside the pipeline process, after loading the 31M ratings — "
+                       "memory pressure on 8 GB, so slower):\n\n" if S else "")
+               + "| request (one at a time) | p50 ms | p95 ms |\n|---|---:|---:|\n"
                + "".join(f"| {x['endpoint']} | {x['p50']:.1f} | {x['p95']:.1f} |\n" for x in L["rows"] if x.get("n")))
+    if S or L:
         md += "\nLatencies vary run to run — quote as approximate.\n"
     return md + "\n"
 
@@ -311,8 +320,8 @@ def ranker_status(res: dict[str, dict]) -> str:
 
 
 def cv_status(res: dict[str, dict]) -> str:
-    """What the numbers support so far, per CV bullet (facts only, no rounding up)."""
-    md = "## CV bullets — what the numbers support so far\n\n"
+    """What the numbers support, per CV bullet (facts only, no rounding up)."""
+    md = "## CV bullets — what the numbers support\n\n"
     sig = [s for s in res["day06"].get("test", {}).get("significance", [])
            if s["model"].endswith("(ours)") and s["setting"].startswith("seeds_")]
     good = [s for s in sig if s["p_le_0"] < 0.05 and s["ci95"][0] > 0]
@@ -347,7 +356,7 @@ def cv_status(res: dict[str, dict]) -> str:
                f"({100 * (sel['val_ndcg@10'] / res['day09']['train']['rows'][0]['ndcg@10'] - 1):+.1f}%)."
                if sel and res["day09"].get("train") else "")
         md += (f"3. Warm-user NDCG@10 vs popularity: test baseline **{pop:.4f}**; the CV number comes "
-               f"from the Day 10 test run (a +12% claim would need ≥ {1.12 * pop:.4f}).{val}\n")
+               f"from the Day 10 test run.{val}\n")
     s = _final_sig(res, "two-stage ranker (ours)", "popularity")
     if s:
         rel = _final_sig(res, "two-stage ranker (ours)", "release-aware")
